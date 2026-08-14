@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Chewy — Autoship Subscription Flywheel</title>
+<script src="https://unpkg.com/@sigmacomputing/plugin"></script>
+<style>
+  html,body{margin:0;height:100%;background:#0A3D6E;color:#fff;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  #stage{position:relative;width:100%;height:100%;overflow:hidden;}
+  svg{display:block;width:100%;height:100%;}
+  .lbl{font-size:11px;fill:#CFE0F5;}
+  .val{font-weight:700;fill:#FFFFFF;}
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<script>
+(function(){
+  "use strict";
+  var stage=document.getElementById("stage");
+
+  // ----- brand palette (Chewy) -----
+  var RING=["#1C49C2","#2FB98D","#00B2A9","#5B8DEF","#8FB3F2","#0A3D6E"];
+  var TRACK="rgba(255,255,255,0.12)";
+
+  // ----- fallback data so the plugin looks right unbound (synth) -----
+  function synth(){
+    return {
+      autoship: 0.80,
+      items:[
+        {name:"Consumables", value:7000, members:15400, goal:0.972},
+        {name:"Chewy Pharmacy", value:2050, members:4200, goal:1.058},
+        {name:"Hardgoods", value:1480, members:6800, goal:0.681},
+        {name:"Chewy Health & Vet Care", value:620, members:1100, goal:1.092},
+        {name:"International (Canada)", value:500, members:1200, goal:0.893},
+        {name:"Sponsored Ads", value:210, members:900, goal:1.124}
+      ]
+    };
+  }
+
+  function fmtB(v){ // v in $MM -> compact
+    if(v>=1000) return "$"+(v/1000).toFixed(1)+"B";
+    return "$"+Math.round(v)+"M";
+  }
+
+  function draw(model){
+    var w=stage.clientWidth||520, h=stage.clientHeight||300;
+    var cx=Math.min(w*0.34, 210), cy=h/2;
+    var R=Math.max(52, Math.min(cx, cy)-26);
+    var items=model.items.slice().sort(function(a,b){return b.value-a.value;});
+    var total=items.reduce(function(s,d){return s+(+d.value||0);},0)||1;
+
+    // build donut arcs
+    var TWO=Math.PI*2, start=-Math.PI/2, gap=0.045;
+    function pt(r,a){return [cx+r*Math.cos(a), cy+r*Math.sin(a)];}
+    function arc(r0,r1,a0,a1){
+      var large=(a1-a0)>Math.PI?1:0;
+      var p0=pt(r1,a0),p1=pt(r1,a1),p2=pt(r0,a1),p3=pt(r0,a0);
+      return "M"+p0[0]+" "+p0[1]+
+             "A"+r1+" "+r1+" 0 "+large+" 1 "+p1[0]+" "+p1[1]+
+             "L"+p2[0]+" "+p2[1]+
+             "A"+r0+" "+r0+" 0 "+large+" 0 "+p3[0]+" "+p3[1]+"Z";
+    }
+    var inner=R*0.60, segs="", a=start;
+    for(var i=0;i<items.length;i++){
+      var frac=(+items[i].value||0)/total;
+      var a1=a+frac*TWO;
+      var aa0=a+gap/2, aa1=Math.max(aa0, a1-gap/2);
+      segs+='<path d="'+arc(inner,R,aa0,aa1)+'" fill="'+RING[i%RING.length]+'">'+
+            '<title>'+items[i].name+' — '+fmtB(items[i].value)+' net sales</title></path>';
+      a=a1;
+    }
+
+    // three flywheel "momentum" spokes (static — no animation loop, so PNG export idles)
+    var spokes="";
+    for(var s=0;s<3;s++){
+      var ang=start+ s*(TWO/3) + 0.35;
+      var e=pt(R+16,ang);
+      spokes+='<line x1="'+cx+'" y1="'+cy+'" x2="'+e[0]+'" y2="'+e[1]+
+              '" stroke="rgba(255,255,255,0.10)" stroke-width="2"/>';
+    }
+
+    var ap=Math.round((model.autoship||0)*100);
+
+    // legend on the right
+    var lx=Math.min(w-0.02*w, cx+R+34), ly=cy-(items.length*20)/2, leg="";
+    for(var j=0;j<items.length;j++){
+      var yy=ly+j*20;
+      leg+='<rect x="'+lx+'" y="'+(yy-9)+'" width="11" height="11" rx="2" fill="'+RING[j%RING.length]+'"/>'+
+           '<text class="lbl" x="'+(lx+18)+'" y="'+yy+'">'+
+             escapeXml(items[j].name)+'</text>'+
+           '<text class="val" x="'+(w-14)+'" y="'+yy+'" text-anchor="end" font-size="11">'+
+             fmtB(items[j].value)+'</text>';
+    }
+
+    stage.innerHTML=
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+w+' '+h+'">'+
+        '<circle cx="'+cx+'" cy="'+cy+'" r="'+(R+16)+'" fill="none" stroke="'+TRACK+'" stroke-width="2"/>'+
+        spokes+
+        segs+
+        '<text class="val" x="'+cx+'" y="'+(cy-6)+'" text-anchor="middle" font-size="30">'+ap+'%</text>'+
+        '<text class="lbl" x="'+cx+'" y="'+(cy+14)+'" text-anchor="middle">Autoship of net sales</text>'+
+        '<text class="lbl" x="'+cx+'" y="'+(cy+32)+'" text-anchor="middle" fill="#8FB3F2">'+fmtB(total)+' total</text>'+
+        leg+
+      '</svg>';
+  }
+
+  function escapeXml(s){return String(s).replace(/[<&>]/g,function(c){
+    return c==="<"?"&lt;":c===">"?"&gt;":"&amp;";});}
+
+  // ----- Sigma wiring -----
+  var haveSigma = window.sigmaComputing && window.sigmaComputing.plugin;
+  if(!haveSigma){ draw(synth()); wireResize(synth); return; }
+
+  var client=window.sigmaComputing.plugin.client;
+  client.config.configureEditorPanel([
+    {name:"source", type:"element"},
+    {name:"product", type:"column", source:"source", allowedTypes:["text"], label:"Business line"},
+    {name:"value", type:"column", source:"source", allowedTypes:["number"], label:"Net sales / value"},
+    {name:"members", type:"column", source:"source", allowedTypes:["number"], label:"Customers"},
+    {name:"goal", type:"column", source:"source", allowedTypes:["number"], label:"Goal %"},
+    {name:"autoship", type:"text", label:"Autoship % (0-1)", defaultValue:"0.80"}
+  ]);
+
+  var unsub=null, lastModel=synth();
+  client.config.subscribe(function(cfg){
+    if(unsub){ unsub(); unsub=null; }
+    var ap=parseFloat(cfg && cfg.autoship);
+    var autoship=(isFinite(ap)?ap:0.80);
+    if(cfg && cfg.source && cfg.product && cfg.value){
+      unsub=client.elements.subscribeToElementData(cfg.source, function(data){
+        try{
+          var names=data[cfg.product]||[], vals=data[cfg.value]||[];
+          var mem=(cfg.members&&data[cfg.members])||[], gl=(cfg.goal&&data[cfg.goal])||[];
+          var items=[];
+          for(var i=0;i<names.length;i++){
+            items.push({name:names[i], value:+vals[i]||0,
+                        members:+mem[i]||0, goal:+gl[i]||0});
+          }
+          lastModel = items.length ? {autoship:autoship, items:items} : synth();
+        }catch(e){ lastModel=synth(); }
+        draw(lastModel);
+      });
+    } else {
+      lastModel={autoship:autoship, items:synth().items};
+      draw(lastModel);
+    }
+  });
+
+  wireResize(function(){return lastModel;});
+
+  function wireResize(getModel){
+    draw(getModel());
+    if(window.ResizeObserver){
+      var ro=new ResizeObserver(function(){ draw(getModel()); });
+      ro.observe(stage);
+    }
+  }
+})();
+</script>
+</body>
+</html>
