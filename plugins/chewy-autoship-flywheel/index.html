@@ -26,23 +26,25 @@
   var TRACK="rgba(255,255,255,0.12)";
 
   // ----- fallback data so the plugin looks right unbound (synth) -----
+  // Values are in $B, matching the product-card table's "Balances $B" column
+  // (net sales for Chewy) that this plugin binds to.
   function synth(){
     return {
       autoship: 0.80,
       items:[
-        {name:"Consumables", value:7000, members:15400, goal:0.972},
-        {name:"Chewy Pharmacy", value:2050, members:4200, goal:1.058},
-        {name:"Hardgoods", value:1480, members:6800, goal:0.681},
-        {name:"Chewy Health & Vet Care", value:620, members:1100, goal:1.092},
-        {name:"International (Canada)", value:500, members:1200, goal:0.893},
-        {name:"Sponsored Ads", value:210, members:900, goal:1.124}
+        {name:"Consumables", value:7.00, members:15.4, goal:0.972},
+        {name:"Chewy Pharmacy", value:2.05, members:4.2, goal:1.058},
+        {name:"Hardgoods", value:1.48, members:6.8, goal:0.681},
+        {name:"Chewy Health & Vet Care", value:0.62, members:1.1, goal:1.092},
+        {name:"International (Canada)", value:0.50, members:1.2, goal:0.893},
+        {name:"Sponsored Ads", value:0.21, members:0.9, goal:1.124}
       ]
     };
   }
 
-  function fmtB(v){ // v in $MM -> compact
-    if(v>=1000) return "$"+(v/1000).toFixed(1)+"B";
-    return "$"+Math.round(v)+"M";
+  function fmtB(v){ // v in $B -> compact
+    if(v>=1) return "$"+v.toFixed(1)+"B";
+    return "$"+Math.round(v*1000)+"M";
   }
 
   function draw(model){
