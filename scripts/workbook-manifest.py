@@ -27,6 +27,9 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Any
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import spec_shape  # noqa: E402
+
 
 # Recognized top-level spec keys. Anything else flags as unknown.
 # `layout` lives at the top level (one XML string containing one <Page> doc
@@ -35,6 +38,8 @@ from typing import Any
 SPEC_KEYS = {
     "name", "schemaVersion", "folderId", "pages", "controls", "description",
     "layout", "folders", "themeOverrides",
+    # current API shape (contents wrapper, flat elements) — view built by spec_shape.normalize
+    "settings", "kind", "elements", "overlays", "panels", "agents",
     # GET-spec metadata — present on round-trip, not part of authored spec.
     "createdAt", "createdBy", "documentVersion", "latestDocumentVersion",
     "ownerId", "updatedAt", "updatedBy", "url", "workbookId",
@@ -263,8 +268,8 @@ def summarize_layout(layout_xml: str) -> list[str]:
     if interesting_page:
         lines.append(f"- 🎨 page-level layout attrs (non-grid): `{interesting_page}`")
 
-    layout_elements = root.findall(".//LayoutElement")
-    grid_containers = root.findall(".//GridContainer")
+    layout_elements = root.findall(".//Element") + root.findall(".//LayoutElement")
+    grid_containers = root.findall(".//Container") + root.findall(".//GridContainer")
     lines.append(f"- layout: {len(layout_elements)} placed elements, "
                  f"{len(grid_containers)} grid containers")
 
@@ -603,8 +608,13 @@ def _load_spec(spec_path: Path) -> dict:
                 "Install with `pip install PyYAML`, or convert the spec "
                 "to JSON with `yq -o=json . spec.yaml > spec.json`."
             )
-        return yaml.safe_load(text)
-    return json.loads(text)
+        raw = yaml.safe_load(text)
+    else:
+        raw = json.loads(text)
+    # Accept contents-wrapped, document-wrapped and old flat shapes: the normalized view has
+    # pages[].elements filled from the layout, so the per-page summaries work unchanged.
+    view, _shape = spec_shape.normalize(raw)
+    return {k: v for k, v in view.items() if not k.startswith("_")}
 
 
 def manifest(spec_path: Path) -> str:

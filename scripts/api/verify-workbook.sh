@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # verify-workbook.sh — confirm a workbook's elements compile to valid SQL.
 #
-# Why this exists: POST /v2/workbooks/spec is generous. It accepts specs
+# Why this exists: POST /v2/workbooks (and PUT .../contents) is generous. It accepts specs
 # whose column formulas don't actually resolve, then surfaces the failures
 # at query time as string literals embedded in the compiled SQL — e.g.
 #   select 'Unknown column "[ORDER_TOTAL]"' V_44 from ...
@@ -82,7 +82,7 @@ echo ""
 if [ "$ERRORS" -gt 0 ]; then
   echo "$ERRORS of $TOTAL element(s) have unresolved formula references."
   echo "Fix the offending columns in the spec (see reference/specification/formulas.md)"
-  echo "and re-PUT the spec, then re-verify."
+  echo "and re-PUT the contents (publish-workbook.sh put), then re-verify."
   exit 1
 fi
 echo "All $TOTAL element(s) compile cleanly."

@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
 """Pre-POST static validation for a Sigma workbook spec.
 
+Accepts three file shapes (see scripts/spec_shape.py):
+  - current   {name, folderId, contents:{elements[flat], pages[meta], layout, settings}}
+  - document  {name, folderId, document:{...}}   (legacy /v2/workbooks/spec endpoint)
+  - old flat  {pages:[{elements}], layout, themeOverrides}  (pre-2026-09; warns "convert first")
+
 The Sigma POST/PUT endpoints accept structurally broken specs and silently
 rewrite the layout — most notably, per-page `pages[].layout` fields are
 discarded, container children stack into a 1/13-wide single column when not
-nested in their `<GridContainer>` in the layout XML, and `format` on columns
+nested in their `<Container>` in the layout XML, and `format` on columns
 returns a misleading "Missing 'kind' field" error when the shape is wrong.
 
 Also catches two regression modes from the 2026-05-19 test sessions:
@@ -23,7 +28,11 @@ from __future__ import annotations
 import json
 import re
 import sys
+import os
 import xml.etree.ElementTree as ET
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import spec_shape  # noqa: E402
 
 
 CHECKS = [
@@ -40,6 +49,13 @@ CHECKS = [
     "summary-calc-collision",
     "description-object-on-kpi-and-table",
     "pivot-missing-rows-and-columns",
+    # added 2026-09-29 (API format migration)
+    "request-shape",
+    "legacy-layout-tags",
+    "element-ids-unique",
+    "text-vertical-align",
+    "channel-binding-shape",
+    "kpi-latest-period-trap",
 ]
 
 
@@ -73,26 +89,20 @@ def issues_per_page_layout(spec: dict) -> list[tuple[str, str]]:
 
 
 def _parse_layout(layout: str) -> ET.Element | None:
-    if not layout:
-        return None
-    cleaned = re.sub(r"<\?xml[^?]*\?>", "", layout).strip()
-    wrapped = f"<root>{cleaned}</root>"
-    try:
-        return ET.fromstring(wrapped)
-    except ET.ParseError as e:
-        sys.stderr.write(f"validate-spec: layout XML failed to parse: {e}\n")
-        return None
+    return spec_shape.parse_layout(layout)
 
 
 def issues_elements_placed(spec: dict, root: ET.Element | None) -> list[tuple[str, str]]:
     if root is None:
         return [("fail", "no top-level `layout` field — workbook will have an auto-generated layout")]
-    placed_ids = {
-        el.get("elementId")
-        for el in root.iter()
-        if el.tag in ("LayoutElement", "GridContainer")
-    }
+    placed_ids = spec_shape.placed_ids(root)
     issues = []
+    for el in spec.get("_unplaced", []):
+        issues.append((
+            "fail",
+            f"elements ({el.get('id')}, kind={el.get('kind')}): not placed in the "
+            "layout XML — the API rejects an unplaced element."
+        ))
     for pi, p in enumerate(spec.get("pages", [])):
         for el in p.get("elements", []):
             eid = el.get("id")
@@ -116,17 +126,18 @@ def issues_containers_have_children(spec: dict, root: ET.Element | None) -> list
     ]
     issues = []
     for cid in container_ids:
-        gc = next((el for el in root.iter("GridContainer") if el.get("elementId") == cid), None)
+        gc = next((el for el in root.iter()
+                   if el.tag in spec_shape.CONTAINER_TAGS and el.get("elementId") == cid), None)
         if gc is None:
             issues.append((
                 "fail",
-                f"container element `{cid}`: no matching <GridContainer> in layout XML."
+                f"container element `{cid}`: no matching <Container> in layout XML."
             ))
         elif len(list(gc)) == 0:
             issues.append((
                 "fail",
-                f"container element `{cid}`: <GridContainer> has no nested children. "
-                "Children must be nested INSIDE the <GridContainer>, not flat siblings."
+                f"container element `{cid}`: <Container> has no nested children. "
+                "Children must be nested INSIDE the <Container>, not flat siblings."
             ))
     return issues
 
@@ -668,13 +679,158 @@ def issues_pivot_missing_rows_and_columns(spec: dict) -> list[tuple[str, str]]:
     return issues
 
 
+# ---------------------------------------------------------------------------
+# Checks added 2026-09-29 (API format migration; see reference/history.md)
+# ---------------------------------------------------------------------------
+
+def issues_request_shape(spec: dict, shape: str, raw: dict) -> list[tuple[str, str]]:
+    issues = []
+    body = spec_shape.inner_body(raw)
+    if shape == "legacy":
+        issues.append((
+            "warn",
+            "file is in the OLD flat shape (pages[].elements, top-level layout). The current API "
+            "rejects it. Run `python3 scripts/convert-legacy-spec.py <file> -o <out>` first "
+            "(publish-workbook.sh does this automatically on `post`)."
+        ))
+        if raw.get("themeOverrides") or raw.get("themeName"):
+            issues.append(("warn", "`themeOverrides`/`themeName` are removed — use `settings.theme.overrides`."))
+        return issues
+    for pid in spec.get("_illegal_page_elements", []):
+        issues.append((
+            "fail",
+            f"pages[{pid}] carries `elements` — the current API rejects nested page elements. "
+            "Put every element in the flat `elements` array and place it via the layout XML."
+        ))
+    for key in ("themeOverrides", "themeName"):
+        if key in body or key in raw:
+            issues.append((
+                "fail",
+                f"`{key}` was removed — use `settings.theme.overrides` "
+                "(reference/specification/schema.md)."
+            ))
+    if not isinstance(body.get("elements"), list):
+        issues.append(("fail", "`elements` must be a flat array (required, even when empty)."))
+    if shape == "contents":
+        for k in ("schemaVersion", "kind", "pages"):
+            if k not in body:
+                issues.append(("fail", f"`contents.{k}` is required."))
+        if raw.get("name") is None and "documentVersion" not in raw:
+            issues.append(("warn", "no outer `name` — fine for PUT bodies, required for POST."))
+    return issues
+
+
+def issues_legacy_layout_tags(root: ET.Element | None) -> list[tuple[str, str]]:
+    if root is None:
+        return []
+    issues = []
+    for tag in spec_shape.LEGACY_LAYOUT_TAGS:
+        n = len(list(root.iter(tag)))
+        if n:
+            new = "Element" if tag == "LayoutElement" else "Container"
+            issues.append((
+                "fail",
+                f"layout uses legacy <{tag}> ({n}×). Use <{new}> — the live API rejects the legacy aliases."
+            ))
+    return issues
+
+
+def issues_element_ids_unique(spec: dict, shape: str) -> list[tuple[str, str]]:
+    flat = spec.get("_flat")
+    if shape == "legacy" or flat is None:
+        return []
+    seen: dict[str, int] = {}
+    for e in flat:
+        eid = e.get("id")
+        if eid:
+            seen[eid] = seen.get(eid, 0) + 1
+    return [
+        ("fail", f"element id `{eid}` is used {n}× — element ids must be unique workbook-wide "
+                 "(prefix ids per page).")
+        for eid, n in seen.items() if n > 1
+    ]
+
+
+def issues_text_vertical_align(spec: dict) -> list[tuple[str, str]]:
+    issues = []
+    for _, el in _all_elements(spec):
+        if el.get("kind") == "text" and "verticalAlign" in el:
+            v = el["verticalAlign"]
+            if v not in ("top", "center", "bottom"):
+                hint = {"middle": "center", "start": "top", "end": "bottom"}.get(v)
+                issues.append((
+                    "fail",
+                    f"text `{el.get('id')}`: verticalAlign={v!r} is invalid (top|center|bottom)"
+                    + (f" — use {hint!r}." if hint else ".")
+                    + " The API reports this only as `Invalid kind: \"text\"`."
+                ))
+    return issues
+
+
+CHANNEL_KEYS = {
+    "donut-chart": ("value", "color", "holeValue"),
+    "pie-chart": ("value", "color"),
+    "point-map": ("latitude", "longitude", "size"),
+    "region-map": ("region",),
+    "geography-map": ("geography",),
+}
+
+
+def issues_channel_binding_shape(spec: dict) -> list[tuple[str, str]]:
+    issues = []
+    for _, el in _all_elements(spec):
+        kind = el.get("kind")
+        keys = CHANNEL_KEYS.get(kind)
+        if not keys:
+            continue
+        for k in keys:
+            v = el.get(k)
+            if isinstance(v, dict) and "id" in v and "columnId" not in v and v.get("by") is None:
+                issues.append((
+                    "fail",
+                    f"{kind} `{el.get('id')}`: `{k}` uses {{id}} — the API requires {{columnId}} "
+                    "(reported as `Invalid kind`)."
+                ))
+        if kind in ("point-map", "region-map", "geography-map"):
+            for k in ("label", "tooltip"):
+                v = el.get(k)
+                if isinstance(v, list) and any(isinstance(x, dict) and "id" in x and "columnId" not in x for x in v):
+                    issues.append((
+                        "fail",
+                        f"{kind} `{el.get('id')}`: `{k}[]` entries use {{id}} — use {{columnId}}."
+                    ))
+    return issues
+
+
+def issues_kpi_latest_period_trap(spec: dict) -> list[tuple[str, str]]:
+    """A KPI with timeline/periodComparison/comparison shows the LATEST PERIOD's value,
+    not the all-time total (observed 2026-09-29: 'Total Revenue' $222M vs $10.3B actual)."""
+    issues = []
+    for _, el in _all_elements(spec):
+        if el.get("kind") != "kpi-chart":
+            continue
+        if not (el.get("timeline") or el.get("periodComparison")):
+            continue
+        name = el.get("name")
+        text = name.get("text") if isinstance(name, dict) else name
+        if text and re.search(r"\b(total|all[- ]time|overall)\b", str(text), re.I):
+            issues.append((
+                "warn",
+                f"kpi `{el.get('id')}` ('{text}') has timeline/periodComparison — it will show the "
+                "latest period, not a total. Drop the timeline/comparison or relabel the tile "
+                "('… — latest month')."
+            ))
+    return issues
+
+
 def main() -> None:
     if len(sys.argv) != 2:
         sys.stderr.write("usage: validate-spec.py <spec.json>\n")
         sys.exit(2)
     with open(sys.argv[1]) as f:
-        spec = json.load(f)
+        raw = json.load(f)
 
+    spec, shape = spec_shape.normalize(raw)
     root = _parse_layout(spec.get("layout", ""))
 
     all_issues: list[tuple[str, str, str]] = []
@@ -692,6 +848,12 @@ def main() -> None:
         ("summary-calc-collision",     lambda: issues_summary_calc_collision(spec)),
         ("description-object-on-kpi-and-table", lambda: issues_description_object_on_kpi_and_table(spec)),
         ("pivot-missing-rows-and-columns", lambda: issues_pivot_missing_rows_and_columns(spec)),
+        ("request-shape",              lambda: issues_request_shape(spec, shape, raw)),
+        ("legacy-layout-tags",         lambda: issues_legacy_layout_tags(root)),
+        ("element-ids-unique",         lambda: issues_element_ids_unique(spec, shape)),
+        ("text-vertical-align",        lambda: issues_text_vertical_align(spec)),
+        ("channel-binding-shape",      lambda: issues_channel_binding_shape(spec)),
+        ("kpi-latest-period-trap",     lambda: issues_kpi_latest_period_trap(spec)),
     ]:
         for level, msg in fn():
             all_issues.append((level, tag, msg))

@@ -1,0 +1,2701 @@
+{
+  "name": "Webstaurant Sales Command Center",
+  "folderId": "<DESTINATION_FOLDER_UUID>",
+  "contents": {
+    "schemaVersion": 1,
+    "kind": "workbook",
+    "pages": [
+      {
+        "id": "page-overview",
+        "name": "Executive Overview"
+      },
+      {
+        "id": "page-products",
+        "name": "Product Performance"
+      },
+      {
+        "id": "page-stores",
+        "name": "Stores & Customers"
+      }
+    ],
+    "elements": [
+      {
+        "id": "ctr-p1-hero",
+        "kind": "container",
+        "style": {
+          "backgroundColor": "#198d00",
+          "borderRadius": "round",
+          "borderColor": "#1d5c00",
+          "borderWidth": 3
+        }
+      },
+      {
+        "id": "txt-p1-title",
+        "kind": "text",
+        "verticalAlign": "center",
+        "body": "## <span style=\"color: #FFFFFF\">**WebstaurantStore \u2014 Sales Command Center**</span>\n\n<span style=\"color: #FFFFFF\">*Revenue, profitability and momentum across every store and product line.*</span>"
+      },
+      {
+        "id": "ctr-p1-filters",
+        "kind": "container",
+        "style": {
+          "backgroundColor": "#FFFFFF",
+          "borderRadius": "round",
+          "borderColor": "#198d00",
+          "borderWidth": 3
+        }
+      },
+      {
+        "kind": "control",
+        "id": "ctrl-p1-date",
+        "controlId": "OvDateRange",
+        "name": "Date range",
+        "controlType": "date-range",
+        "mode": "between",
+        "includeNulls": "when-no-value-is-selected",
+        "style": {
+          "backgroundColor": {
+            "kind": "theme",
+            "ref": "colors-baseCanvasSurface"
+          },
+          "borderColor": "#d6e6cf",
+          "borderWidth": 1
+        },
+        "filters": [
+          {
+            "source": {
+              "kind": "table",
+              "elementId": "tbl-p1"
+            },
+            "columnId": "p1-date"
+          }
+        ]
+      },
+      {
+        "kind": "control",
+        "id": "ctrl-p1-region",
+        "controlId": "OvRegion",
+        "name": "Region",
+        "controlType": "list",
+        "mode": "include",
+        "selectionMode": "multiple",
+        "values": [],
+        "style": {
+          "backgroundColor": {
+            "kind": "theme",
+            "ref": "colors-baseCanvasSurface"
+          },
+          "borderColor": "#d6e6cf",
+          "borderWidth": 1
+        },
+        "source": {
+          "kind": "source",
+          "source": {
+            "kind": "table",
+            "elementId": "tbl-p1"
+          },
+          "columnId": "p1-store-region"
+        },
+        "filters": [
+          {
+            "source": {
+              "kind": "table",
+              "elementId": "tbl-p1"
+            },
+            "columnId": "p1-store-region"
+          }
+        ]
+      },
+      {
+        "kind": "control",
+        "id": "ctrl-p1-grain",
+        "controlId": "OvGrain",
+        "name": "Trend grain",
+        "controlType": "segmented",
+        "style": {
+          "backgroundColor": {
+            "kind": "theme",
+            "ref": "colors-baseCanvasSurface"
+          },
+          "borderColor": "#d6e6cf",
+          "borderWidth": 1
+        },
+        "value": "month",
+        "source": {
+          "kind": "manual",
+          "valueType": "text",
+          "values": [
+            "year",
+            "quarter",
+            "month",
+            "week",
+            "day"
+          ],
+          "labels": [
+            "Year",
+            "Quarter",
+            "Month",
+            "Week",
+            "Day"
+          ]
+        }
+      },
+      {
+        "kind": "control",
+        "id": "ctrl-p1-ptype",
+        "controlId": "OvProductType",
+        "name": "Product type",
+        "controlType": "list",
+        "mode": "include",
+        "selectionMode": "multiple",
+        "values": [],
+        "style": {
+          "backgroundColor": {
+            "kind": "theme",
+            "ref": "colors-baseCanvasSurface"
+          },
+          "borderColor": "#d6e6cf",
+          "borderWidth": 1
+        },
+        "source": {
+          "kind": "source",
+          "source": {
+            "kind": "table",
+            "elementId": "tbl-p1"
+          },
+          "columnId": "p1-web-product-type"
+        },
+        "filters": [
+          {
+            "source": {
+              "kind": "table",
+              "elementId": "tbl-p1"
+            },
+            "columnId": "p1-web-product-type"
+          }
+        ]
+      },
+      {
+        "id": "ctr-p1-kpis",
+        "kind": "container",
+        "style": {
+          "backgroundColor": "#FFFFFF",
+          "borderRadius": "round",
+          "borderColor": "#d6e6cf",
+          "borderWidth": 1
+        }
+      },
+      {
+        "id": "kpi-p1-rev",
+        "kind": "kpi-chart",
+        "source": {
+          "kind": "table",
+          "elementId": "tbl-p1"
+        },
+        "columns": [
+          {
+            "id": "kpi-p1-rev-val",
+            "name": "Total Revenue",
+            "formula": "Sum([Sales Detail/Revenue])",
+            "format": {
+              "kind": "number",
+              "formatString": "$,.0f"
+            }
+          }
+        ],
+        "value": {
+          "columnId": "kpi-p1-rev-val",
+          "fontSize": 30
+        },
+        "name": {
+          "text": "Total Revenue",
+          "fontSize": 16
+        },
+        "style": {
+          "borderRadius": "round",
+          "borderColor": "#d6e6cf",
+          "borderWidth": 1
+        }
+      },
+      {
+        "id": "kpi-p1-profit",
+        "kind": "kpi-chart",
+        "source": {
+          "kind": "table",
+          "elementId": "tbl-p1"
+        },
+        "columns": [
+          {
+            "id": "kpi-p1-profit-val",
+            "name": "Total Profit",
+            "formula": "Sum([Sales Detail/Profit])",
+            "format": {
+              "kind": "number",
+              "formatString": "$,.0f"
+            }
+          }
+        ],
+        "value": {
+          "columnId": "kpi-p1-profit-val",
+          "fontSize": 30
+        },
+        "name": {
+          "text": "Total Profit",
+          "fontSize": 16
+        },
+        "style": {
+          "borderRadius": "round",
+          "borderColor": "#d6e6cf",
+          "borderWidth": 1
+        }
+      },
+      {
+        "id": "kpi-p1-margin",
+        "kind": "kpi-chart",
+        "source": {
+          "kind": "table",
+          "elementId": "tbl-p1"
+        },
+        "columns": [
+          {
+            "id": "kpi-p1-margin-val",
+            "name": "Profit Margin",
+            "formula": "Sum([Sales Detail/Profit]) / Sum([Sales Detail/Revenue])",
+            "format": {
+              "kind": "number",
+              "formatString": ".1%"
+            }
+          }
+        ],
+        "value": {
+          "columnId": "kpi-p1-margin-val",
+          "fontSize": 30
+        },
+        "name": {
+          "text": "Profit Margin",
+          "fontSize": 16
+        },
+        "style": {
+          "borderRadius": "round",
+          "borderColor": "#d6e6cf",
+          "borderWidth": 1
+        }
+      },
+      {
+        "id": "kpi-p1-orders",
+        "kind": "kpi-chart",
+        "source": {
+          "kind": "table",
+          "elementId": "tbl-p1"
+        },
+        "columns": [
+          {
+            "id": "kpi-p1-orders-val",
+            "name": "Orders",
+            "formula": "CountDistinct([Sales Detail/Order Number])",
+            "format": {
+              "kind": "number",
+              "formatString": ",.0f"
+            }
+          }
+        ],
+        "value": {
+          "columnId": "kpi-p1-orders-val",
+          "fontSize": 30
+        },
+        "name": {
+          "text": "Orders",
+          "fontSize": 16
+        },
+        "style": {
+          "borderRadius": "round",
+          "borderColor": "#d6e6cf",
+          "borderWidth": 1
+        }
+      },
+      {
+        "id": "kpi-p1-units",
+        "kind": "kpi-chart",
+        "source": {
+          "kind": "table",
+          "elementId": "tbl-p1"
+        },
+        "columns": [
+          {
+            "id": "kpi-p1-units-val",
+            "name": "Units Sold",
+            "formula": "Sum([Sales Detail/Quantity])",
+            "format": {
+              "kind": "number",
+              "formatString": ",.0f"
+            }
+          }
+        ],
+        "value": {
+          "columnId": "kpi-p1-units-val",
+          "fontSize": 30
+        },
+        "name": {
+          "text": "Units Sold",
+          "fontSize": 16
+        },
+        "style": {
+          "borderRadius": "round",
+          "borderColor": "#d6e6cf",
+          "borderWidth": 1
+        }
+      },
+      {
+        "id": "ctr-p1-charts",
+        "kind": "container",
+        "style": {
+          "backgroundColor": "#FFFFFF",
+          "borderRadius": "round",
+          "borderColor": "#d6e6cf",
+          "borderWidth": 1
+        }
+      },
+      {
+        "id": "chart-p1-trend",
+        "kind": "line-chart",
+        "source": {
+          "kind": "table",
+          "elementId": "tbl-p1"
+        },
+        "columns": [
+          {
+            "id": "ct-period",
+            "name": "Period",
+            "formula": "DateTrunc([OvGrain], [Sales Detail/Date])",
+            "format": {
+              "kind": "datetime",
+              "formatString": "%b %Y"
+            }
+          },
+          {
+            "id": "ct-rev",
+            "name": "Revenue",
+            "formula": "Sum([Sales Detail/Revenue])",
+            "format": {
+              "kind": "number",
+              "formatString": "$,.0f"
+            }
+          },
+          {
+            "id": "ct-profit",
+            "name": "Profit",
+            "formula": "Sum([Sales Detail/Profit])",
+            "format": {
+              "kind": "number",
+              "formatString": "$,.0f"
+            }
+          },
+          {
+            "id": "ct-region",
+            "name": "Store Region",
+            "formula": "[Sales Detail/Store Region]"
+          },
+          {
+            "id": "ct-ptype",
+            "name": "web_product_type",
+            "formula": "[Sales Detail/web_product_type]"
+          }
+        ],
+        "xAxis": {
+          "columnId": "ct-period",
+          "sort": {
+            "by": "ct-period",
+            "direction": "ascending"
+          }
+        },
+        "yAxis": {
+          "columnIds": [
+            "ct-rev",
+            "ct-profit"
+          ]
+        },
+        "name": "Revenue & Profit Trend",
+        "legend": {
+          "position": "bottom"
+        },
+        "style": {
+          "borderRadius": "round",
+          "borderColor": "#d6e6cf",
+          "borderWidth": 1
+        }
+      },
+      {
+        "id": "chart-p1-mix",
+        "kind": "bar-chart",
+        "source": {
+          "kind": "table",
+          "elementId": "tbl-p1"
+        },
+        "columns": [
+          {
+            "id": "chart-p1-mix-dim",
+            "name": "Product Family",
+            "formula": "[Sales Detail/web_product_family]"
+          },
+          {
+            "id": "chart-p1-mix-m",
+            "name": "Revenue",
+            "formula": "Sum([Sales Detail/Revenue])",
+            "format": {
+              "kind": "number",
+              "formatString": "$,.0f"
+            }
+          },
+          {
+            "id": "chart-p1-mix-x0",
+            "name": "Store Region",
+            "formula": "[Sales Detail/Store Region]"
+          },
+          {
+            "id": "chart-p1-mix-x1",
+            "name": "web_product_type",
+            "formula": "[Sales Detail/web_product_type]"
+          },
+          {
+            "id": "chart-p1-mix-x2",
+            "name": "Store Tier",
+            "formula": "[Sales Detail/Store Tier]"
+          },
+          {
+            "id": "chart-p1-mix-x3",
+            "name": "web_product_family",
+            "formula": "[Sales Detail/web_product_family]"
+          },
+          {
+            "id": "chart-p1-mix-x4",
+            "name": "Product Tier",
+            "formula": "[Sales Detail/Product Tier]"
+          }
+        ],
+        "xAxis": {
+          "columnId": "chart-p1-mix-dim",
+          "sort": {
+            "by": "chart-p1-mix-m",
+            "direction": "descending"
+          }
+        },
+        "yAxis": {
+          "columnIds": [
+            "chart-p1-mix-m"
+          ]
+        },
+        "stacking": "none",
+        "orientation": "horizontal",
+        "color": {
+          "by": "single",
+          "value": "#00aeef"
+        },
+        "name": "Top 10 Product Families by Revenue",
+        "style": {
+          "borderRadius": "round",
+          "borderColor": "#d6e6cf",
+          "borderWidth": 1
+        },
+        "gap": {
+          "width": "medium"
+        },
+        "filters": [
+          {
+            "id": "chart-p1-mix-top",
+            "columnId": "chart-p1-mix-m",
+            "kind": "top-n",
+            "rankingFunction": "rank",
+            "mode": "top-n",
+            "rowCount": 10,
+            "includeNulls": "when-no-value-is-selected"
+          }
+        ]
+      },
+      {
+        "id": "chart-p1-region",
+        "kind": "bar-chart",
+        "source": {
+          "kind": "table",
+          "elementId": "tbl-p1"
+        },
+        "columns": [
+          {
+            "id": "chart-p1-region-dim",
+            "name": "Store Region",
+            "formula": "[Sales Detail/Store Region]"
+          },
+          {
+            "id": "chart-p1-region-m",
+            "name": "Revenue",
+            "formula": "Sum([Sales Detail/Revenue])",
+            "format": {
+              "kind": "number",
+              "formatString": "$,.0f"
+            }
+          },
+          {
+            "id": "chart-p1-region-x0",
+            "name": "web_product_type",
+            "formula": "[Sales Detail/web_product_type]"
+          },
+          {
+            "id": "chart-p1-region-x1",
+            "name": "Store Tier",
+            "formula": "[Sales Detail/Store Tier]"
+          },
+          {
+            "id": "chart-p1-region-x2",
+            "name": "web_product_family",
+            "formula": "[Sales Detail/web_product_family]"
+          },
+          {
+            "id": "chart-p1-region-x3",
+            "name": "Product Tier",
+            "formula": "[Sales Detail/Product Tier]"
+          },
+          {
+            "id": "chart-p1-region-x4",
+            "name": "Store State",
+            "formula": "[Sales Detail/Store State]"
+          }
+        ],
+        "xAxis": {
+          "columnId": "chart-p1-region-dim",
+          "sort": {
+            "by": "chart-p1-region-m",
+            "direction": "descending"
+          }
+        },
+        "yAxis": {
+          "columnIds": [
+            "chart-p1-region-m"
+          ]
+        },
+        "stacking": "none",
+        "orientation": "horizontal",
+        "color": {
+          "by": "single",
+          "value": "#198d00"
+        },
+        "name": "Revenue by Region",
+        "style": {
+          "borderRadius": "round",
+          "borderColor": "#d6e6cf",
+          "borderWidth": 1
+        },
+        "gap": {
+          "width": "medium"
+        }
+      },
+      {
+        "id": "chart-p1-stores",
+        "kind": "bar-chart",
+        "source": {
+          "kind": "table",
+          "elementId": "tbl-p1"
+        },
+        "columns": [
+          {
+            "id": "chart-p1-stores-dim",
+            "name": "Store Name",
+            "formula": "[Sales Detail/Store Name]"
+          },
+          {
+            "id": "chart-p1-stores-m",
+            "name": "Revenue",
+            "formula": "Sum([Sales Detail/Revenue])",
+            "format": {
+              "kind": "number",
+              "formatString": "$,.0f"
+            }
+          },
+          {
+            "id": "chart-p1-stores-x0",
+            "name": "Store Region",
+            "formula": "[Sales Detail/Store Region]"
+          },
+          {
+            "id": "chart-p1-stores-x1",
+            "name": "Store Tier",
+            "formula": "[Sales Detail/Store Tier]"
+          },
+          {
+            "id": "chart-p1-stores-x2",
+            "name": "web_product_type",
+            "formula": "[Sales Detail/web_product_type]"
+          },
+          {
+            "id": "chart-p1-stores-x3",
+            "name": "web_product_family",
+            "formula": "[Sales Detail/web_product_family]"
+          },
+          {
+            "id": "chart-p1-stores-x4",
+            "name": "Product Tier",
+            "formula": "[Sales Detail/Product Tier]"
+          }
+        ],
+        "xAxis": {
+          "columnId": "chart-p1-stores-dim",
+          "sort": {
+            "by": "chart-p1-stores-m",
+            "direction": "descending"
+          }
+        },
+        "yAxis": {
+          "columnIds": [
+            "chart-p1-stores-m"
+          ]
+        },
+        "stacking": "none",
+        "orientation": "horizontal",
+        "color": {
+          "by": "single",
+          "value": "#1d5c00"
+        },
+        "name": "Top 10 Stores by Revenue",
+        "style": {
+          "borderRadius": "round",
+          "borderColor": "#d6e6cf",
+          "borderWidth": 1
+        },
+        "gap": {
+          "width": "medium"
+        },
+        "filters": [
+          {
+            "id": "chart-p1-stores-top",
+            "columnId": "chart-p1-stores-m",
+            "kind": "top-n",
+            "rankingFunction": "rank",
+            "mode": "top-n",
+            "rowCount": 10,
+            "includeNulls": "when-no-value-is-selected"
+          }
+        ]
+      },
+      {
+        "id": "tbl-p1",
+        "kind": "table",
+        "name": "Sales Detail",
+        "source": {
+          "kind": "data-model",
+          "dataModelId": "<DATA_MODEL_UUID>",
+          "elementId": "<DATA_MODEL_ELEMENT_UUID>"
+        },
+        "columns": [
+          {
+            "id": "p1-date",
+            "name": "Date",
+            "formula": "[Webstaurant Sales/Date]"
+          },
+          {
+            "id": "p1-order-number",
+            "name": "Order Number",
+            "formula": "[Webstaurant Sales/Order Number]"
+          },
+          {
+            "id": "p1-store-name",
+            "name": "Store Name",
+            "formula": "[Webstaurant Sales/Store Name]"
+          },
+          {
+            "id": "p1-store-region",
+            "name": "Store Region",
+            "formula": "[Webstaurant Sales/Store Region]"
+          },
+          {
+            "id": "p1-customer-name",
+            "name": "Customer Name",
+            "formula": "[Webstaurant Sales/Customer Name]"
+          },
+          {
+            "id": "p1-web-product-family",
+            "name": "web_product_family",
+            "formula": "[Webstaurant Sales/web_product_family]"
+          },
+          {
+            "id": "p1-web-product-name",
+            "name": "web_product_name",
+            "formula": "[Webstaurant Sales/web_product_name]"
+          },
+          {
+            "id": "p1-quantity",
+            "name": "Quantity",
+            "formula": "[Webstaurant Sales/Quantity]",
+            "format": {
+              "kind": "number",
+              "formatString": ",.0f"
+            }
+          },
+          {
+            "id": "p1-price",
+            "name": "Price",
+            "formula": "[Webstaurant Sales/Price]",
+            "format": {
+              "kind": "number",
+              "formatString": "$,.2f"
+            }
+          },
+          {
+            "id": "p1-revenue",
+            "name": "Revenue",
+            "formula": "[Webstaurant Sales/Revenue]",
+            "format": {
+              "kind": "number",
+              "formatString": "$,.0f"
+            }
+          },
+          {
+            "id": "p1-profit",
+            "name": "Profit",
+            "formula": "[Webstaurant Sales/Profit]",
+            "format": {
+              "kind": "number",
+              "formatString": "$,.0f"
+            }
+          },
+          {
+            "id": "p1-cost",
+            "name": "Cost",
+            "formula": "[Webstaurant Sales/Cost]",
+            "format": {
+              "kind": "number",
+              "formatString": "$,.2f"
+            }
+          },
+          {
+            "id": "p1-cogs",
+            "name": "COGS",
+            "formula": "[Webstaurant Sales/COGS]",
+            "format": {
+              "kind": "number",
+              "formatString": "$,.0f"
+            }
+          },
+          {
+            "id": "p1-product-key",
+            "name": "Product Key",
+            "formula": "[Webstaurant Sales/Product Key]"
+          },
+          {
+            "id": "p1-sku-number",
+            "name": "Sku Number",
+            "formula": "[Webstaurant Sales/Sku Number]"
+          },
+          {
+            "id": "p1-product-type",
+            "name": "Product Type",
+            "formula": "[Webstaurant Sales/Product Type]"
+          },
+          {
+            "id": "p1-product-family",
+            "name": "Product Family",
+            "formula": "[Webstaurant Sales/Product Family]"
+          },
+          {
+            "id": "p1-product-line",
+            "name": "Product Line",
+            "formula": "[Webstaurant Sales/Product Line]"
+          },
+          {
+            "id": "p1-brand",
+            "name": "Brand",
+            "formula": "[Webstaurant Sales/Brand]"
+          },
+          {
+            "id": "p1-product-name",
+            "name": "Product Name",
+            "formula": "[Webstaurant Sales/Product Name]"
+          },
+          {
+            "id": "p1-product-tier",
+            "name": "Product Tier",
+            "formula": "[Webstaurant Sales/Product Tier]"
+          },
+          {
+            "id": "p1-web-product-type",
+            "name": "web_product_type",
+            "formula": "[Webstaurant Sales/web_product_type]"
+          },
+          {
+            "id": "p1-web-product-line",
+            "name": "web_product_line",
+            "formula": "[Webstaurant Sales/web_product_line]"
+          },
+          {
+            "id": "p1-web-brand",
+            "name": "web_brand",
+            "formula": "[Webstaurant Sales/web_brand]"
+          },
+          {
+            "id": "p1-merchant-id",
+            "name": "Merchant Id",
+            "formula": "[Webstaurant Sales/Merchant Id]"
+          },
+          {
+            "id": "p1-store-key",
+            "name": "Store Key",
+            "formula": "[Webstaurant Sales/Store Key]"
+          },
+          {
+            "id": "p1-store-tier",
+            "name": "Store Tier",
+            "formula": "[Webstaurant Sales/Store Tier]"
+          },
+          {
+            "id": "p1-store-tier-order",
+            "name": "Store Tier Order",
+            "formula": "[Webstaurant Sales/Store Tier Order]"
+          },
+          {
+            "id": "p1-store-state",
+            "name": "Store State",
+            "formula": "[Webstaurant Sales/Store State]"
+          },
+          {
+            "id": "p1-store-city",
+            "name": "Store City",
+            "formula": "[Webstaurant Sales/Store City]"
+          },
+          {
+            "id": "p1-store-zip-code",
+            "name": "Store Zip Code",
+            "formula": "[Webstaurant Sales/Store Zip Code]"
+          },
+          {
+            "id": "p1-store-latitude",
+            "name": "Store Latitude",
+            "formula": "[Webstaurant Sales/Store Latitude]"
+          },
+          {
+            "id": "p1-store-longitude",
+            "name": "Store Longitude",
+            "formula": "[Webstaurant Sales/Store Longitude]"
+          },
+          {
+            "id": "p1-county-name",
+            "name": "County Name",
+            "formula": "[Webstaurant Sales/County Name]"
+          },
+          {
+            "id": "p1-zip-population",
+            "name": "Zip Population",
+            "formula": "[Webstaurant Sales/Zip Population]"
+          },
+          {
+            "id": "p1-cust-key",
+            "name": "Cust Key",
+            "formula": "[Webstaurant Sales/Cust Key]"
+          }
+        ],
+        "order": [
+          "p1-date",
+          "p1-order-number",
+          "p1-store-name",
+          "p1-store-region",
+          "p1-customer-name",
+          "p1-web-product-family",
+          "p1-web-product-name",
+          "p1-quantity",
+          "p1-price",
+          "p1-revenue",
+          "p1-profit",
+          "p1-cost",
+          "p1-cogs",
+          "p1-product-key",
+          "p1-sku-number",
+          "p1-product-type",
+          "p1-product-family",
+          "p1-product-line",
+          "p1-brand",
+          "p1-product-name",
+          "p1-product-tier",
+          "p1-web-product-type",
+          "p1-web-product-line",
+          "p1-web-brand",
+          "p1-merchant-id",
+          "p1-store-key",
+          "p1-store-tier",
+          "p1-store-tier-order",
+          "p1-store-state",
+          "p1-store-city",
+          "p1-store-zip-code",
+          "p1-store-latitude",
+          "p1-store-longitude",
+          "p1-county-name",
+          "p1-zip-population",
+          "p1-cust-key"
+        ],
+        "style": {
+          "borderRadius": "round",
+          "borderColor": "#d6e6cf",
+          "borderWidth": 1
+        }
+      },
+      {
+        "id": "ctr-p2-hero",
+        "kind": "container",
+        "style": {
+          "backgroundColor": "#198d00",
+          "borderRadius": "round",
+          "borderColor": "#1d5c00",
+          "borderWidth": 3
+        }
+      },
+      {
+        "id": "txt-p2-title",
+        "kind": "text",
+        "verticalAlign": "center",
+        "body": "## <span style=\"color: #FFFFFF\">**Product Performance**</span>\n\n<span style=\"color: #FFFFFF\">*Which brands, types and tiers drive revenue \u2014 and which earn the margin.*</span>"
+      },
+      {
+        "id": "ctr-p2-filters",
+        "kind": "container",
+        "style": {
+          "backgroundColor": "#FFFFFF",
+          "borderRadius": "round",
+          "borderColor": "#198d00",
+          "borderWidth": 3
+        }
+      },
+      {
+        "kind": "control",
+        "id": "ctrl-p2-date",
+        "controlId": "PpDateRange",
+        "name": "Date range",
+        "controlType": "date-range",
+        "mode": "between",
+        "includeNulls": "when-no-value-is-selected",
+        "style": {
+          "backgroundColor": {
+            "kind": "theme",
+            "ref": "colors-baseCanvasSurface"
+          },
+          "borderColor": "#d6e6cf",
+          "borderWidth": 1
+        },
+        "filters": [
+          {
+            "source": {
+              "kind": "table",
+              "elementId": "tbl-p2"
+            },
+            "columnId": "p2-date"
+          }
+        ]
+      },
+      {
+        "kind": "control",
+        "id": "ctrl-p2-region",
+        "controlId": "PpRegion",
+        "name": "Region",
+        "controlType": "list",
+        "mode": "include",
+        "selectionMode": "multiple",
+        "values": [],
+        "style": {
+          "backgroundColor": {
+            "kind": "theme",
+            "ref": "colors-baseCanvasSurface"
+          },
+          "borderColor": "#d6e6cf",
+          "borderWidth": 1
+        },
+        "source": {
+          "kind": "source",
+          "source": {
+            "kind": "table",
+            "elementId": "tbl-p2"
+          },
+          "columnId": "p2-store-region"
+        },
+        "filters": [
+          {
+            "source": {
+              "kind": "table",
+              "elementId": "tbl-p2"
+            },
+            "columnId": "p2-store-region"
+          }
+        ]
+      },
+      {
+        "kind": "control",
+        "id": "ctrl-p2-ptype",
+        "controlId": "PpProductType",
+        "name": "Product type",
+        "controlType": "list",
+        "mode": "include",
+        "selectionMode": "multiple",
+        "values": [],
+        "style": {
+          "backgroundColor": {
+            "kind": "theme",
+            "ref": "colors-baseCanvasSurface"
+          },
+          "borderColor": "#d6e6cf",
+          "borderWidth": 1
+        },
+        "source": {
+          "kind": "source",
+          "source": {
+            "kind": "table",
+            "elementId": "tbl-p2"
+          },
+          "columnId": "p2-web-product-type"
+        },
+        "filters": [
+          {
+            "source": {
+              "kind": "table",
+              "elementId": "tbl-p2"
+            },
+            "columnId": "p2-web-product-type"
+          }
+        ]
+      },
+      {
+        "id": "ctr-p2-kpis",
+        "kind": "container",
+        "style": {
+          "backgroundColor": "#FFFFFF",
+          "borderRadius": "round",
+          "borderColor": "#d6e6cf",
+          "borderWidth": 1
+        }
+      },
+      {
+        "id": "kpi-p2-rev",
+        "kind": "kpi-chart",
+        "source": {
+          "kind": "table",
+          "elementId": "tbl-p2"
+        },
+        "columns": [
+          {
+            "id": "kpi-p2-rev-val",
+            "name": "Total Revenue",
+            "formula": "Sum([Product Sales Data/Revenue])",
+            "format": {
+              "kind": "number",
+              "formatString": "$,.0f"
+            }
+          }
+        ],
+        "value": {
+          "columnId": "kpi-p2-rev-val",
+          "fontSize": 30
+        },
+        "name": {
+          "text": "Total Revenue",
+          "fontSize": 16
+        },
+        "style": {
+          "borderRadius": "round",
+          "borderColor": "#d6e6cf",
+          "borderWidth": 1
+        }
+      },
+      {
+        "id": "kpi-p2-profit",
+        "kind": "kpi-chart",
+        "source": {
+          "kind": "table",
+          "elementId": "tbl-p2"
+        },
+        "columns": [
+          {
+            "id": "kpi-p2-profit-val",
+            "name": "Total Profit",
+            "formula": "Sum([Product Sales Data/Profit])",
+            "format": {
+              "kind": "number",
+              "formatString": "$,.0f"
+            }
+          }
+        ],
+        "value": {
+          "columnId": "kpi-p2-profit-val",
+          "fontSize": 30
+        },
+        "name": {
+          "text": "Total Profit",
+          "fontSize": 16
+        },
+        "style": {
+          "borderRadius": "round",
+          "borderColor": "#d6e6cf",
+          "borderWidth": 1
+        }
+      },
+      {
+        "id": "kpi-p2-margin",
+        "kind": "kpi-chart",
+        "source": {
+          "kind": "table",
+          "elementId": "tbl-p2"
+        },
+        "columns": [
+          {
+            "id": "kpi-p2-margin-val",
+            "name": "Profit Margin",
+            "formula": "Sum([Product Sales Data/Profit]) / Sum([Product Sales Data/Revenue])",
+            "format": {
+              "kind": "number",
+              "formatString": ".1%"
+            }
+          }
+        ],
+        "value": {
+          "columnId": "kpi-p2-margin-val",
+          "fontSize": 30
+        },
+        "name": {
+          "text": "Profit Margin",
+          "fontSize": 16
+        },
+        "style": {
+          "borderRadius": "round",
+          "borderColor": "#d6e6cf",
+          "borderWidth": 1
+        }
+      },
+      {
+        "id": "kpi-p2-products",
+        "kind": "kpi-chart",
+        "source": {
+          "kind": "table",
+          "elementId": "tbl-p2"
+        },
+        "columns": [
+          {
+            "id": "kpi-p2-products-val",
+            "name": "Distinct Products",
+            "formula": "CountDistinct([Product Sales Data/web_product_name])",
+            "format": {
+              "kind": "number",
+              "formatString": ",.0f"
+            }
+          }
+        ],
+        "value": {
+          "columnId": "kpi-p2-products-val",
+          "fontSize": 30
+        },
+        "name": {
+          "text": "Distinct Products",
+          "fontSize": 16
+        },
+        "style": {
+          "borderRadius": "round",
+          "borderColor": "#d6e6cf",
+          "borderWidth": 1
+        }
+      },
+      {
+        "id": "ctr-p2-charts",
+        "kind": "container",
+        "style": {
+          "backgroundColor": "#FFFFFF",
+          "borderRadius": "round",
+          "borderColor": "#d6e6cf",
+          "borderWidth": 1
+        }
+      },
+      {
+        "id": "chart-p2-brands",
+        "kind": "bar-chart",
+        "source": {
+          "kind": "table",
+          "elementId": "tbl-p2"
+        },
+        "columns": [
+          {
+            "id": "chart-p2-brands-dim",
+            "name": "Brand",
+            "formula": "[Product Sales Data/web_brand]"
+          },
+          {
+            "id": "chart-p2-brands-m",
+            "name": "Revenue",
+            "formula": "Sum([Product Sales Data/Revenue])",
+            "format": {
+              "kind": "number",
+              "formatString": "$,.0f"
+            }
+          },
+          {
+            "id": "chart-p2-brands-x0",
+            "name": "web_product_type",
+            "formula": "[Product Sales Data/web_product_type]"
+          },
+          {
+            "id": "chart-p2-brands-x1",
+            "name": "Product Tier",
+            "formula": "[Product Sales Data/Product Tier]"
+          },
+          {
+            "id": "chart-p2-brands-x2",
+            "name": "Store Region",
+            "formula": "[Product Sales Data/Store Region]"
+          },
+          {
+            "id": "chart-p2-brands-x3",
+            "name": "Store Tier",
+            "formula": "[Product Sales Data/Store Tier]"
+          },
+          {
+            "id": "chart-p2-brands-x4",
+            "name": "web_product_family",
+            "formula": "[Product Sales Data/web_product_family]"
+          }
+        ],
+        "xAxis": {
+          "columnId": "chart-p2-brands-dim",
+          "sort": {
+            "by": "chart-p2-brands-m",
+            "direction": "descending"
+          }
+        },
+        "yAxis": {
+          "columnIds": [
+            "chart-p2-brands-m"
+          ]
+        },
+        "stacking": "none",
+        "orientation": "horizontal",
+        "color": {
+          "by": "single",
+          "value": "#198d00"
+        },
+        "name": "Top 10 Brands by Revenue",
+        "style": {
+          "borderRadius": "round",
+          "borderColor": "#d6e6cf",
+          "borderWidth": 1
+        },
+        "gap": {
+          "width": "medium"
+        },
+        "filters": [
+          {
+            "id": "chart-p2-brands-top",
+            "columnId": "chart-p2-brands-m",
+            "kind": "top-n",
+            "rankingFunction": "rank",
+            "mode": "top-n",
+            "rowCount": 10,
+            "includeNulls": "when-no-value-is-selected"
+          }
+        ]
+      },
+      {
+        "id": "chart-p2-margin",
+        "kind": "bar-chart",
+        "source": {
+          "kind": "table",
+          "elementId": "tbl-p2"
+        },
+        "columns": [
+          {
+            "id": "chart-p2-margin-dim",
+            "name": "Product Type",
+            "formula": "[Product Sales Data/web_product_type]"
+          },
+          {
+            "id": "chart-p2-margin-m",
+            "name": "Profit Margin",
+            "formula": "Sum([Product Sales Data/Profit]) / Sum([Product Sales Data/Revenue])",
+            "format": {
+              "kind": "number",
+              "formatString": ".1%"
+            }
+          },
+          {
+            "id": "chart-p2-margin-x0",
+            "name": "web_product_family",
+            "formula": "[Product Sales Data/web_product_family]"
+          },
+          {
+            "id": "chart-p2-margin-x1",
+            "name": "Product Tier",
+            "formula": "[Product Sales Data/Product Tier]"
+          },
+          {
+            "id": "chart-p2-margin-x2",
+            "name": "Store Region",
+            "formula": "[Product Sales Data/Store Region]"
+          },
+          {
+            "id": "chart-p2-margin-x3",
+            "name": "Store Tier",
+            "formula": "[Product Sales Data/Store Tier]"
+          },
+          {
+            "id": "chart-p2-margin-x4",
+            "name": "web_product_type",
+            "formula": "[Product Sales Data/web_product_type]"
+          }
+        ],
+        "xAxis": {
+          "columnId": "chart-p2-margin-dim",
+          "sort": {
+            "by": "chart-p2-margin-m",
+            "direction": "descending"
+          }
+        },
+        "yAxis": {
+          "columnIds": [
+            "chart-p2-margin-m"
+          ]
+        },
+        "stacking": "none",
+        "orientation": "horizontal",
+        "color": {
+          "by": "single",
+          "value": "#00aeef"
+        },
+        "name": "Profit Margin by Product Type",
+        "style": {
+          "borderRadius": "round",
+          "borderColor": "#d6e6cf",
+          "borderWidth": 1
+        },
+        "gap": {
+          "width": "medium"
+        }
+      },
+      {
+        "id": "chart-p2-tier",
+        "kind": "donut-chart",
+        "source": {
+          "kind": "table",
+          "elementId": "tbl-p2"
+        },
+        "columns": [
+          {
+            "id": "chart-p2-tier-dim",
+            "name": "Product Tier",
+            "formula": "[Product Sales Data/Product Tier]"
+          },
+          {
+            "id": "chart-p2-tier-rev",
+            "name": "Revenue",
+            "formula": "Sum([Product Sales Data/Revenue])",
+            "format": {
+              "kind": "number",
+              "formatString": "$,.0f"
+            }
+          },
+          {
+            "id": "chart-p2-tier-ord",
+            "name": "Orders",
+            "formula": "CountDistinct([Product Sales Data/Order Number])",
+            "format": {
+              "kind": "number",
+              "formatString": ",.3s"
+            }
+          },
+          {
+            "id": "chart-p2-tier-x0",
+            "name": "web_product_type",
+            "formula": "[Product Sales Data/web_product_type]"
+          },
+          {
+            "id": "chart-p2-tier-x1",
+            "name": "Store Region",
+            "formula": "[Product Sales Data/Store Region]"
+          },
+          {
+            "id": "chart-p2-tier-x2",
+            "name": "Store Tier",
+            "formula": "[Product Sales Data/Store Tier]"
+          },
+          {
+            "id": "chart-p2-tier-x3",
+            "name": "web_product_family",
+            "formula": "[Product Sales Data/web_product_family]"
+          }
+        ],
+        "color": {
+          "columnId": "chart-p2-tier-dim",
+          "sort": {
+            "by": "chart-p2-tier-rev",
+            "direction": "descending"
+          }
+        },
+        "value": {
+          "columnId": "chart-p2-tier-rev"
+        },
+        "holeValue": {
+          "columnId": "chart-p2-tier-ord"
+        },
+        "legend": {
+          "position": "bottom"
+        },
+        "name": "Revenue by Product Tier",
+        "style": {
+          "borderRadius": "round",
+          "borderColor": "#d6e6cf",
+          "borderWidth": 1
+        }
+      },
+      {
+        "id": "tbl-p2-detail",
+        "kind": "table",
+        "source": {
+          "kind": "table",
+          "elementId": "tbl-p2"
+        },
+        "name": "Product Detail",
+        "columns": [
+          {
+            "id": "pd-family",
+            "name": "Product Family",
+            "formula": "[Product Sales Data/web_product_family]"
+          },
+          {
+            "id": "pd-line",
+            "name": "Product Line",
+            "formula": "[Product Sales Data/web_product_line]"
+          },
+          {
+            "id": "pd-name",
+            "name": "Product Name",
+            "formula": "[Product Sales Data/web_product_name]"
+          },
+          {
+            "id": "pd-rev",
+            "name": "Revenue",
+            "formula": "Sum([Product Sales Data/Revenue])",
+            "format": {
+              "kind": "number",
+              "formatString": "$,.0f"
+            }
+          },
+          {
+            "id": "pd-profit",
+            "name": "Profit",
+            "formula": "Sum([Product Sales Data/Profit])",
+            "format": {
+              "kind": "number",
+              "formatString": "$,.0f"
+            }
+          },
+          {
+            "id": "pd-margin",
+            "name": "Profit Margin",
+            "formula": "Sum([Product Sales Data/Profit]) / Sum([Product Sales Data/Revenue])",
+            "format": {
+              "kind": "number",
+              "formatString": ".1%"
+            }
+          },
+          {
+            "id": "pd-units",
+            "name": "Units",
+            "formula": "Sum([Product Sales Data/Quantity])",
+            "format": {
+              "kind": "number",
+              "formatString": ",.0f"
+            }
+          }
+        ],
+        "groupings": [
+          {
+            "id": "pd-g",
+            "groupBy": [
+              "pd-family",
+              "pd-line",
+              "pd-name"
+            ],
+            "calculations": [
+              "pd-rev",
+              "pd-profit",
+              "pd-margin",
+              "pd-units"
+            ]
+          }
+        ],
+        "order": [
+          "pd-family",
+          "pd-line",
+          "pd-name",
+          "pd-rev",
+          "pd-profit",
+          "pd-margin",
+          "pd-units"
+        ],
+        "conditionalFormats": [
+          {
+            "type": "dataBars",
+            "columnIds": [
+              "pd-margin"
+            ],
+            "scheme": [
+              "#a6d690",
+              "#198d00"
+            ],
+            "includeValues": true
+          }
+        ],
+        "style": {
+          "borderRadius": "round",
+          "borderColor": "#d6e6cf",
+          "borderWidth": 1
+        }
+      },
+      {
+        "id": "tbl-p2",
+        "kind": "table",
+        "name": "Product Sales Data",
+        "source": {
+          "kind": "data-model",
+          "dataModelId": "<DATA_MODEL_UUID>",
+          "elementId": "<DATA_MODEL_ELEMENT_UUID>"
+        },
+        "columns": [
+          {
+            "id": "p2-date",
+            "name": "Date",
+            "formula": "[Webstaurant Sales/Date]"
+          },
+          {
+            "id": "p2-order-number",
+            "name": "Order Number",
+            "formula": "[Webstaurant Sales/Order Number]"
+          },
+          {
+            "id": "p2-store-name",
+            "name": "Store Name",
+            "formula": "[Webstaurant Sales/Store Name]"
+          },
+          {
+            "id": "p2-store-region",
+            "name": "Store Region",
+            "formula": "[Webstaurant Sales/Store Region]"
+          },
+          {
+            "id": "p2-customer-name",
+            "name": "Customer Name",
+            "formula": "[Webstaurant Sales/Customer Name]"
+          },
+          {
+            "id": "p2-web-product-family",
+            "name": "web_product_family",
+            "formula": "[Webstaurant Sales/web_product_family]"
+          },
+          {
+            "id": "p2-web-product-name",
+            "name": "web_product_name",
+            "formula": "[Webstaurant Sales/web_product_name]"
+          },
+          {
+            "id": "p2-quantity",
+            "name": "Quantity",
+            "formula": "[Webstaurant Sales/Quantity]",
+            "format": {
+              "kind": "number",
+              "formatString": ",.0f"
+            }
+          },
+          {
+            "id": "p2-price",
+            "name": "Price",
+            "formula": "[Webstaurant Sales/Price]",
+            "format": {
+              "kind": "number",
+              "formatString": "$,.2f"
+            }
+          },
+          {
+            "id": "p2-revenue",
+            "name": "Revenue",
+            "formula": "[Webstaurant Sales/Revenue]",
+            "format": {
+              "kind": "number",
+              "formatString": "$,.0f"
+            }
+          },
+          {
+            "id": "p2-profit",
+            "name": "Profit",
+            "formula": "[Webstaurant Sales/Profit]",
+            "format": {
+              "kind": "number",
+              "formatString": "$,.0f"
+            }
+          },
+          {
+            "id": "p2-cost",
+            "name": "Cost",
+            "formula": "[Webstaurant Sales/Cost]",
+            "format": {
+              "kind": "number",
+              "formatString": "$,.2f"
+            }
+          },
+          {
+            "id": "p2-cogs",
+            "name": "COGS",
+            "formula": "[Webstaurant Sales/COGS]",
+            "format": {
+              "kind": "number",
+              "formatString": "$,.0f"
+            }
+          },
+          {
+            "id": "p2-product-key",
+            "name": "Product Key",
+            "formula": "[Webstaurant Sales/Product Key]"
+          },
+          {
+            "id": "p2-sku-number",
+            "name": "Sku Number",
+            "formula": "[Webstaurant Sales/Sku Number]"
+          },
+          {
+            "id": "p2-product-type",
+            "name": "Product Type",
+            "formula": "[Webstaurant Sales/Product Type]"
+          },
+          {
+            "id": "p2-product-family",
+            "name": "Product Family",
+            "formula": "[Webstaurant Sales/Product Family]"
+          },
+          {
+            "id": "p2-product-line",
+            "name": "Product Line",
+            "formula": "[Webstaurant Sales/Product Line]"
+          },
+          {
+            "id": "p2-brand",
+            "name": "Brand",
+            "formula": "[Webstaurant Sales/Brand]"
+          },
+          {
+            "id": "p2-product-name",
+            "name": "Product Name",
+            "formula": "[Webstaurant Sales/Product Name]"
+          },
+          {
+            "id": "p2-product-tier",
+            "name": "Product Tier",
+            "formula": "[Webstaurant Sales/Product Tier]"
+          },
+          {
+            "id": "p2-web-product-type",
+            "name": "web_product_type",
+            "formula": "[Webstaurant Sales/web_product_type]"
+          },
+          {
+            "id": "p2-web-product-line",
+            "name": "web_product_line",
+            "formula": "[Webstaurant Sales/web_product_line]"
+          },
+          {
+            "id": "p2-web-brand",
+            "name": "web_brand",
+            "formula": "[Webstaurant Sales/web_brand]"
+          },
+          {
+            "id": "p2-merchant-id",
+            "name": "Merchant Id",
+            "formula": "[Webstaurant Sales/Merchant Id]"
+          },
+          {
+            "id": "p2-store-key",
+            "name": "Store Key",
+            "formula": "[Webstaurant Sales/Store Key]"
+          },
+          {
+            "id": "p2-store-tier",
+            "name": "Store Tier",
+            "formula": "[Webstaurant Sales/Store Tier]"
+          },
+          {
+            "id": "p2-store-tier-order",
+            "name": "Store Tier Order",
+            "formula": "[Webstaurant Sales/Store Tier Order]"
+          },
+          {
+            "id": "p2-store-state",
+            "name": "Store State",
+            "formula": "[Webstaurant Sales/Store State]"
+          },
+          {
+            "id": "p2-store-city",
+            "name": "Store City",
+            "formula": "[Webstaurant Sales/Store City]"
+          },
+          {
+            "id": "p2-store-zip-code",
+            "name": "Store Zip Code",
+            "formula": "[Webstaurant Sales/Store Zip Code]"
+          },
+          {
+            "id": "p2-store-latitude",
+            "name": "Store Latitude",
+            "formula": "[Webstaurant Sales/Store Latitude]"
+          },
+          {
+            "id": "p2-store-longitude",
+            "name": "Store Longitude",
+            "formula": "[Webstaurant Sales/Store Longitude]"
+          },
+          {
+            "id": "p2-county-name",
+            "name": "County Name",
+            "formula": "[Webstaurant Sales/County Name]"
+          },
+          {
+            "id": "p2-zip-population",
+            "name": "Zip Population",
+            "formula": "[Webstaurant Sales/Zip Population]"
+          },
+          {
+            "id": "p2-cust-key",
+            "name": "Cust Key",
+            "formula": "[Webstaurant Sales/Cust Key]"
+          }
+        ],
+        "order": [
+          "p2-date",
+          "p2-order-number",
+          "p2-store-name",
+          "p2-store-region",
+          "p2-customer-name",
+          "p2-web-product-family",
+          "p2-web-product-name",
+          "p2-quantity",
+          "p2-price",
+          "p2-revenue",
+          "p2-profit",
+          "p2-cost",
+          "p2-cogs",
+          "p2-product-key",
+          "p2-sku-number",
+          "p2-product-type",
+          "p2-product-family",
+          "p2-product-line",
+          "p2-brand",
+          "p2-product-name",
+          "p2-product-tier",
+          "p2-web-product-type",
+          "p2-web-product-line",
+          "p2-web-brand",
+          "p2-merchant-id",
+          "p2-store-key",
+          "p2-store-tier",
+          "p2-store-tier-order",
+          "p2-store-state",
+          "p2-store-city",
+          "p2-store-zip-code",
+          "p2-store-latitude",
+          "p2-store-longitude",
+          "p2-county-name",
+          "p2-zip-population",
+          "p2-cust-key"
+        ],
+        "style": {
+          "borderRadius": "round",
+          "borderColor": "#d6e6cf",
+          "borderWidth": 1
+        }
+      },
+      {
+        "id": "ctr-p3-hero",
+        "kind": "container",
+        "style": {
+          "backgroundColor": "#198d00",
+          "borderRadius": "round",
+          "borderColor": "#1d5c00",
+          "borderWidth": 3
+        }
+      },
+      {
+        "id": "txt-p3-title",
+        "kind": "text",
+        "verticalAlign": "center",
+        "body": "## <span style=\"color: #FFFFFF\">**Stores & Customers**</span>\n\n<span style=\"color: #FFFFFF\">*Where the business is strongest, and who is buying.*</span>"
+      },
+      {
+        "id": "ctr-p3-filters",
+        "kind": "container",
+        "style": {
+          "backgroundColor": "#FFFFFF",
+          "borderRadius": "round",
+          "borderColor": "#198d00",
+          "borderWidth": 3
+        }
+      },
+      {
+        "kind": "control",
+        "id": "ctrl-p3-date",
+        "controlId": "StDateRange",
+        "name": "Date range",
+        "controlType": "date-range",
+        "mode": "between",
+        "includeNulls": "when-no-value-is-selected",
+        "style": {
+          "backgroundColor": {
+            "kind": "theme",
+            "ref": "colors-baseCanvasSurface"
+          },
+          "borderColor": "#d6e6cf",
+          "borderWidth": 1
+        },
+        "filters": [
+          {
+            "source": {
+              "kind": "table",
+              "elementId": "tbl-p3"
+            },
+            "columnId": "p3-date"
+          }
+        ]
+      },
+      {
+        "kind": "control",
+        "id": "ctrl-p3-region",
+        "controlId": "StRegion",
+        "name": "Region",
+        "controlType": "list",
+        "mode": "include",
+        "selectionMode": "multiple",
+        "values": [],
+        "style": {
+          "backgroundColor": {
+            "kind": "theme",
+            "ref": "colors-baseCanvasSurface"
+          },
+          "borderColor": "#d6e6cf",
+          "borderWidth": 1
+        },
+        "source": {
+          "kind": "source",
+          "source": {
+            "kind": "table",
+            "elementId": "tbl-p3"
+          },
+          "columnId": "p3-store-region"
+        },
+        "filters": [
+          {
+            "source": {
+              "kind": "table",
+              "elementId": "tbl-p3"
+            },
+            "columnId": "p3-store-region"
+          }
+        ]
+      },
+      {
+        "kind": "control",
+        "id": "ctrl-p3-tier",
+        "controlId": "StTierCtrl",
+        "name": "Store tier",
+        "controlType": "list",
+        "mode": "include",
+        "selectionMode": "multiple",
+        "values": [],
+        "style": {
+          "backgroundColor": {
+            "kind": "theme",
+            "ref": "colors-baseCanvasSurface"
+          },
+          "borderColor": "#d6e6cf",
+          "borderWidth": 1
+        },
+        "source": {
+          "kind": "source",
+          "source": {
+            "kind": "table",
+            "elementId": "tbl-p3"
+          },
+          "columnId": "p3-store-tier"
+        },
+        "filters": [
+          {
+            "source": {
+              "kind": "table",
+              "elementId": "tbl-p3"
+            },
+            "columnId": "p3-store-tier"
+          }
+        ]
+      },
+      {
+        "id": "ctr-p3-kpis",
+        "kind": "container",
+        "style": {
+          "backgroundColor": "#FFFFFF",
+          "borderRadius": "round",
+          "borderColor": "#d6e6cf",
+          "borderWidth": 1
+        }
+      },
+      {
+        "id": "kpi-p3-stores",
+        "kind": "kpi-chart",
+        "source": {
+          "kind": "table",
+          "elementId": "tbl-p3"
+        },
+        "columns": [
+          {
+            "id": "kpi-p3-stores-val",
+            "name": "Active Stores",
+            "formula": "CountDistinct([Store Sales Data/Store Key])",
+            "format": {
+              "kind": "number",
+              "formatString": ",.0f"
+            }
+          }
+        ],
+        "value": {
+          "columnId": "kpi-p3-stores-val",
+          "fontSize": 30
+        },
+        "name": {
+          "text": "Active Stores",
+          "fontSize": 16
+        },
+        "style": {
+          "borderRadius": "round",
+          "borderColor": "#d6e6cf",
+          "borderWidth": 1
+        }
+      },
+      {
+        "id": "kpi-p3-revstore",
+        "kind": "kpi-chart",
+        "source": {
+          "kind": "table",
+          "elementId": "tbl-p3"
+        },
+        "columns": [
+          {
+            "id": "kpi-p3-revstore-val",
+            "name": "Revenue per Store",
+            "formula": "Sum([Store Sales Data/Revenue]) / CountDistinct([Store Sales Data/Store Key])",
+            "format": {
+              "kind": "number",
+              "formatString": "$,.0f"
+            }
+          }
+        ],
+        "value": {
+          "columnId": "kpi-p3-revstore-val",
+          "fontSize": 30
+        },
+        "name": {
+          "text": "Revenue per Store",
+          "fontSize": 16
+        },
+        "style": {
+          "borderRadius": "round",
+          "borderColor": "#d6e6cf",
+          "borderWidth": 1
+        }
+      },
+      {
+        "id": "kpi-p3-cust",
+        "kind": "kpi-chart",
+        "source": {
+          "kind": "table",
+          "elementId": "tbl-p3"
+        },
+        "columns": [
+          {
+            "id": "kpi-p3-cust-val",
+            "name": "Distinct Customers",
+            "formula": "CountDistinct([Store Sales Data/Cust Key])",
+            "format": {
+              "kind": "number",
+              "formatString": ",.0f"
+            }
+          }
+        ],
+        "value": {
+          "columnId": "kpi-p3-cust-val",
+          "fontSize": 30
+        },
+        "name": {
+          "text": "Distinct Customers",
+          "fontSize": 16
+        },
+        "style": {
+          "borderRadius": "round",
+          "borderColor": "#d6e6cf",
+          "borderWidth": 1
+        }
+      },
+      {
+        "id": "kpi-p3-aov",
+        "kind": "kpi-chart",
+        "source": {
+          "kind": "table",
+          "elementId": "tbl-p3"
+        },
+        "columns": [
+          {
+            "id": "kpi-p3-aov-val",
+            "name": "Avg Order Value",
+            "formula": "Sum([Store Sales Data/Revenue]) / CountDistinct([Store Sales Data/Order Number])",
+            "format": {
+              "kind": "number",
+              "formatString": "$,.2f"
+            }
+          }
+        ],
+        "value": {
+          "columnId": "kpi-p3-aov-val",
+          "fontSize": 30
+        },
+        "name": {
+          "text": "Avg Order Value",
+          "fontSize": 16
+        },
+        "style": {
+          "borderRadius": "round",
+          "borderColor": "#d6e6cf",
+          "borderWidth": 1
+        }
+      },
+      {
+        "id": "ctr-p3-charts",
+        "kind": "container",
+        "style": {
+          "backgroundColor": "#FFFFFF",
+          "borderRadius": "round",
+          "borderColor": "#d6e6cf",
+          "borderWidth": 1
+        }
+      },
+      {
+        "id": "map-p3-stores",
+        "kind": "point-map",
+        "source": {
+          "kind": "table",
+          "elementId": "tbl-p3"
+        },
+        "columns": [
+          {
+            "id": "mp-lat",
+            "name": "Store Latitude",
+            "formula": "[Store Sales Data/Store Latitude]"
+          },
+          {
+            "id": "mp-lon",
+            "name": "Store Longitude",
+            "formula": "[Store Sales Data/Store Longitude]"
+          },
+          {
+            "id": "mp-name",
+            "name": "Store Name",
+            "formula": "[Store Sales Data/Store Name]"
+          },
+          {
+            "id": "mp-region",
+            "name": "Store Region",
+            "formula": "[Store Sales Data/Store Region]"
+          },
+          {
+            "id": "mp-rev",
+            "name": "Revenue",
+            "formula": "Sum([Store Sales Data/Revenue])",
+            "format": {
+              "kind": "number",
+              "formatString": "$,.0f"
+            }
+          },
+          {
+            "id": "mp-margin",
+            "name": "Profit Margin",
+            "formula": "Sum([Store Sales Data/Profit]) / Sum([Store Sales Data/Revenue])",
+            "format": {
+              "kind": "number",
+              "formatString": ".1%"
+            }
+          }
+        ],
+        "latitude": {
+          "columnId": "mp-lat"
+        },
+        "longitude": {
+          "columnId": "mp-lon"
+        },
+        "size": {
+          "columnId": "mp-rev"
+        },
+        "color": {
+          "by": "scale",
+          "column": "mp-margin"
+        },
+        "name": "Store Locations",
+        "style": {
+          "borderRadius": "round",
+          "borderColor": "#d6e6cf",
+          "borderWidth": 1
+        },
+        "legend": {
+          "position": "bottom-left"
+        }
+      },
+      {
+        "id": "chart-p3-tier",
+        "kind": "bar-chart",
+        "source": {
+          "kind": "table",
+          "elementId": "tbl-p3"
+        },
+        "columns": [
+          {
+            "id": "chart-p3-tier-dim",
+            "name": "Store Tier",
+            "formula": "[Store Sales Data/Store Tier]"
+          },
+          {
+            "id": "chart-p3-tier-m",
+            "name": "Revenue",
+            "formula": "Sum([Store Sales Data/Revenue])",
+            "format": {
+              "kind": "number",
+              "formatString": "$,.0f"
+            }
+          },
+          {
+            "id": "chart-p3-tier-x0",
+            "name": "Store Region",
+            "formula": "[Store Sales Data/Store Region]"
+          },
+          {
+            "id": "chart-p3-tier-x1",
+            "name": "Store Tier Order",
+            "formula": "[Store Sales Data/Store Tier Order]"
+          },
+          {
+            "id": "chart-p3-tier-x2",
+            "name": "web_product_type",
+            "formula": "[Store Sales Data/web_product_type]"
+          },
+          {
+            "id": "chart-p3-tier-x3",
+            "name": "web_product_family",
+            "formula": "[Store Sales Data/web_product_family]"
+          },
+          {
+            "id": "chart-p3-tier-x4",
+            "name": "Product Tier",
+            "formula": "[Store Sales Data/Product Tier]"
+          }
+        ],
+        "xAxis": {
+          "columnId": "chart-p3-tier-dim",
+          "sort": {
+            "by": "chart-p3-tier-m",
+            "direction": "descending"
+          }
+        },
+        "yAxis": {
+          "columnIds": [
+            "chart-p3-tier-m"
+          ]
+        },
+        "stacking": "none",
+        "orientation": "horizontal",
+        "color": {
+          "by": "single",
+          "value": "#1d5c00"
+        },
+        "name": "Revenue by Store Tier",
+        "style": {
+          "borderRadius": "round",
+          "borderColor": "#d6e6cf",
+          "borderWidth": 1
+        },
+        "gap": {
+          "width": "medium"
+        }
+      },
+      {
+        "id": "chart-p3-cust",
+        "kind": "bar-chart",
+        "source": {
+          "kind": "table",
+          "elementId": "tbl-p3"
+        },
+        "columns": [
+          {
+            "id": "chart-p3-cust-dim",
+            "name": "Customer Name",
+            "formula": "[Store Sales Data/Customer Name]"
+          },
+          {
+            "id": "chart-p3-cust-m",
+            "name": "Revenue",
+            "formula": "Sum([Store Sales Data/Revenue])",
+            "format": {
+              "kind": "number",
+              "formatString": "$,.0f"
+            }
+          },
+          {
+            "id": "chart-p3-cust-x0",
+            "name": "Cust Key",
+            "formula": "[Store Sales Data/Cust Key]"
+          },
+          {
+            "id": "chart-p3-cust-x1",
+            "name": "Store Region",
+            "formula": "[Store Sales Data/Store Region]"
+          },
+          {
+            "id": "chart-p3-cust-x2",
+            "name": "Store Tier",
+            "formula": "[Store Sales Data/Store Tier]"
+          },
+          {
+            "id": "chart-p3-cust-x3",
+            "name": "web_product_type",
+            "formula": "[Store Sales Data/web_product_type]"
+          },
+          {
+            "id": "chart-p3-cust-x4",
+            "name": "web_product_family",
+            "formula": "[Store Sales Data/web_product_family]"
+          }
+        ],
+        "xAxis": {
+          "columnId": "chart-p3-cust-dim",
+          "sort": {
+            "by": "chart-p3-cust-m",
+            "direction": "descending"
+          }
+        },
+        "yAxis": {
+          "columnIds": [
+            "chart-p3-cust-m"
+          ]
+        },
+        "stacking": "none",
+        "orientation": "horizontal",
+        "color": {
+          "by": "single",
+          "value": "#198d00"
+        },
+        "name": "Top 10 Customers by Revenue",
+        "style": {
+          "borderRadius": "round",
+          "borderColor": "#d6e6cf",
+          "borderWidth": 1
+        },
+        "gap": {
+          "width": "medium"
+        },
+        "filters": [
+          {
+            "id": "chart-p3-cust-top",
+            "columnId": "chart-p3-cust-m",
+            "kind": "top-n",
+            "rankingFunction": "rank",
+            "mode": "top-n",
+            "rowCount": 10,
+            "includeNulls": "when-no-value-is-selected"
+          }
+        ]
+      },
+      {
+        "id": "tbl-p3-board",
+        "kind": "table",
+        "source": {
+          "kind": "table",
+          "elementId": "tbl-p3"
+        },
+        "name": "Store Leaderboard",
+        "columns": [
+          {
+            "id": "lb-store",
+            "name": "Store Name",
+            "formula": "[Store Sales Data/Store Name]"
+          },
+          {
+            "id": "lb-region",
+            "name": "Store Region",
+            "formula": "[Store Sales Data/Store Region]"
+          },
+          {
+            "id": "lb-tier",
+            "name": "Store Tier",
+            "formula": "[Store Sales Data/Store Tier]"
+          },
+          {
+            "id": "lb-rev",
+            "name": "Revenue",
+            "formula": "Sum([Store Sales Data/Revenue])",
+            "format": {
+              "kind": "number",
+              "formatString": "$,.0f"
+            }
+          },
+          {
+            "id": "lb-profit",
+            "name": "Profit",
+            "formula": "Sum([Store Sales Data/Profit])",
+            "format": {
+              "kind": "number",
+              "formatString": "$,.0f"
+            }
+          },
+          {
+            "id": "lb-orders",
+            "name": "Orders",
+            "formula": "CountDistinct([Store Sales Data/Order Number])",
+            "format": {
+              "kind": "number",
+              "formatString": ",.0f"
+            }
+          }
+        ],
+        "groupings": [
+          {
+            "id": "lb-g",
+            "groupBy": [
+              "lb-store",
+              "lb-region",
+              "lb-tier"
+            ],
+            "calculations": [
+              "lb-rev",
+              "lb-profit",
+              "lb-orders"
+            ]
+          }
+        ],
+        "order": [
+          "lb-store",
+          "lb-region",
+          "lb-tier",
+          "lb-rev",
+          "lb-profit",
+          "lb-orders"
+        ],
+        "conditionalFormats": [
+          {
+            "type": "dataBars",
+            "columnIds": [
+              "lb-rev"
+            ],
+            "scheme": [
+              "#a6d690",
+              "#198d00"
+            ],
+            "includeValues": true
+          }
+        ],
+        "style": {
+          "borderRadius": "round",
+          "borderColor": "#d6e6cf",
+          "borderWidth": 1
+        }
+      },
+      {
+        "id": "tbl-p3",
+        "kind": "table",
+        "name": "Store Sales Data",
+        "source": {
+          "kind": "data-model",
+          "dataModelId": "<DATA_MODEL_UUID>",
+          "elementId": "<DATA_MODEL_ELEMENT_UUID>"
+        },
+        "columns": [
+          {
+            "id": "p3-date",
+            "name": "Date",
+            "formula": "[Webstaurant Sales/Date]"
+          },
+          {
+            "id": "p3-order-number",
+            "name": "Order Number",
+            "formula": "[Webstaurant Sales/Order Number]"
+          },
+          {
+            "id": "p3-store-name",
+            "name": "Store Name",
+            "formula": "[Webstaurant Sales/Store Name]"
+          },
+          {
+            "id": "p3-store-region",
+            "name": "Store Region",
+            "formula": "[Webstaurant Sales/Store Region]"
+          },
+          {
+            "id": "p3-customer-name",
+            "name": "Customer Name",
+            "formula": "[Webstaurant Sales/Customer Name]"
+          },
+          {
+            "id": "p3-web-product-family",
+            "name": "web_product_family",
+            "formula": "[Webstaurant Sales/web_product_family]"
+          },
+          {
+            "id": "p3-web-product-name",
+            "name": "web_product_name",
+            "formula": "[Webstaurant Sales/web_product_name]"
+          },
+          {
+            "id": "p3-quantity",
+            "name": "Quantity",
+            "formula": "[Webstaurant Sales/Quantity]",
+            "format": {
+              "kind": "number",
+              "formatString": ",.0f"
+            }
+          },
+          {
+            "id": "p3-price",
+            "name": "Price",
+            "formula": "[Webstaurant Sales/Price]",
+            "format": {
+              "kind": "number",
+              "formatString": "$,.2f"
+            }
+          },
+          {
+            "id": "p3-revenue",
+            "name": "Revenue",
+            "formula": "[Webstaurant Sales/Revenue]",
+            "format": {
+              "kind": "number",
+              "formatString": "$,.0f"
+            }
+          },
+          {
+            "id": "p3-profit",
+            "name": "Profit",
+            "formula": "[Webstaurant Sales/Profit]",
+            "format": {
+              "kind": "number",
+              "formatString": "$,.0f"
+            }
+          },
+          {
+            "id": "p3-cost",
+            "name": "Cost",
+            "formula": "[Webstaurant Sales/Cost]",
+            "format": {
+              "kind": "number",
+              "formatString": "$,.2f"
+            }
+          },
+          {
+            "id": "p3-cogs",
+            "name": "COGS",
+            "formula": "[Webstaurant Sales/COGS]",
+            "format": {
+              "kind": "number",
+              "formatString": "$,.0f"
+            }
+          },
+          {
+            "id": "p3-product-key",
+            "name": "Product Key",
+            "formula": "[Webstaurant Sales/Product Key]"
+          },
+          {
+            "id": "p3-sku-number",
+            "name": "Sku Number",
+            "formula": "[Webstaurant Sales/Sku Number]"
+          },
+          {
+            "id": "p3-product-type",
+            "name": "Product Type",
+            "formula": "[Webstaurant Sales/Product Type]"
+          },
+          {
+            "id": "p3-product-family",
+            "name": "Product Family",
+            "formula": "[Webstaurant Sales/Product Family]"
+          },
+          {
+            "id": "p3-product-line",
+            "name": "Product Line",
+            "formula": "[Webstaurant Sales/Product Line]"
+          },
+          {
+            "id": "p3-brand",
+            "name": "Brand",
+            "formula": "[Webstaurant Sales/Brand]"
+          },
+          {
+            "id": "p3-product-name",
+            "name": "Product Name",
+            "formula": "[Webstaurant Sales/Product Name]"
+          },
+          {
+            "id": "p3-product-tier",
+            "name": "Product Tier",
+            "formula": "[Webstaurant Sales/Product Tier]"
+          },
+          {
+            "id": "p3-web-product-type",
+            "name": "web_product_type",
+            "formula": "[Webstaurant Sales/web_product_type]"
+          },
+          {
+            "id": "p3-web-product-line",
+            "name": "web_product_line",
+            "formula": "[Webstaurant Sales/web_product_line]"
+          },
+          {
+            "id": "p3-web-brand",
+            "name": "web_brand",
+            "formula": "[Webstaurant Sales/web_brand]"
+          },
+          {
+            "id": "p3-merchant-id",
+            "name": "Merchant Id",
+            "formula": "[Webstaurant Sales/Merchant Id]"
+          },
+          {
+            "id": "p3-store-key",
+            "name": "Store Key",
+            "formula": "[Webstaurant Sales/Store Key]"
+          },
+          {
+            "id": "p3-store-tier",
+            "name": "Store Tier",
+            "formula": "[Webstaurant Sales/Store Tier]"
+          },
+          {
+            "id": "p3-store-tier-order",
+            "name": "Store Tier Order",
+            "formula": "[Webstaurant Sales/Store Tier Order]"
+          },
+          {
+            "id": "p3-store-state",
+            "name": "Store State",
+            "formula": "[Webstaurant Sales/Store State]"
+          },
+          {
+            "id": "p3-store-city",
+            "name": "Store City",
+            "formula": "[Webstaurant Sales/Store City]"
+          },
+          {
+            "id": "p3-store-zip-code",
+            "name": "Store Zip Code",
+            "formula": "[Webstaurant Sales/Store Zip Code]"
+          },
+          {
+            "id": "p3-store-latitude",
+            "name": "Store Latitude",
+            "formula": "[Webstaurant Sales/Store Latitude]"
+          },
+          {
+            "id": "p3-store-longitude",
+            "name": "Store Longitude",
+            "formula": "[Webstaurant Sales/Store Longitude]"
+          },
+          {
+            "id": "p3-county-name",
+            "name": "County Name",
+            "formula": "[Webstaurant Sales/County Name]"
+          },
+          {
+            "id": "p3-zip-population",
+            "name": "Zip Population",
+            "formula": "[Webstaurant Sales/Zip Population]"
+          },
+          {
+            "id": "p3-cust-key",
+            "name": "Cust Key",
+            "formula": "[Webstaurant Sales/Cust Key]"
+          }
+        ],
+        "order": [
+          "p3-date",
+          "p3-order-number",
+          "p3-store-name",
+          "p3-store-region",
+          "p3-customer-name",
+          "p3-web-product-family",
+          "p3-web-product-name",
+          "p3-quantity",
+          "p3-price",
+          "p3-revenue",
+          "p3-profit",
+          "p3-cost",
+          "p3-cogs",
+          "p3-product-key",
+          "p3-sku-number",
+          "p3-product-type",
+          "p3-product-family",
+          "p3-product-line",
+          "p3-brand",
+          "p3-product-name",
+          "p3-product-tier",
+          "p3-web-product-type",
+          "p3-web-product-line",
+          "p3-web-brand",
+          "p3-merchant-id",
+          "p3-store-key",
+          "p3-store-tier",
+          "p3-store-tier-order",
+          "p3-store-state",
+          "p3-store-city",
+          "p3-store-zip-code",
+          "p3-store-latitude",
+          "p3-store-longitude",
+          "p3-county-name",
+          "p3-zip-population",
+          "p3-cust-key"
+        ],
+        "style": {
+          "borderRadius": "round",
+          "borderColor": "#d6e6cf",
+          "borderWidth": 1
+        }
+      }
+    ],
+    "layout": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<Page type=\"grid\" gridTemplateColumns=\"repeat(24, 1fr)\" gridTemplateRows=\"auto\" id=\"page-overview\">\n  <Container elementId=\"ctr-p1-hero\" type=\"grid\" gridColumn=\"1 / 25\" gridRow=\"1 / 6\" gridTemplateColumns=\"repeat(24, 1fr)\" gridTemplateRows=\"auto\">\n    <Element elementId=\"txt-p1-title\" gridColumn=\"1 / 25\" gridRow=\"1 / 6\"/>\n  </Container>\n  <Container elementId=\"ctr-p1-filters\" type=\"grid\" gridColumn=\"1 / 25\" gridRow=\"6 / 11\" gridTemplateColumns=\"repeat(24, 1fr)\" gridTemplateRows=\"auto\">\n    <Element elementId=\"ctrl-p1-date\" gridColumn=\"1 / 7\" gridRow=\"1 / 6\"/>\n    <Element elementId=\"ctrl-p1-region\" gridColumn=\"7 / 13\" gridRow=\"1 / 6\"/>\n    <Element elementId=\"ctrl-p1-grain\" gridColumn=\"13 / 19\" gridRow=\"1 / 6\"/>\n    <Element elementId=\"ctrl-p1-ptype\" gridColumn=\"19 / 25\" gridRow=\"1 / 6\"/>\n  </Container>\n  <Container elementId=\"ctr-p1-kpis\" type=\"grid\" gridColumn=\"1 / 25\" gridRow=\"11 / 18\" gridTemplateColumns=\"repeat(24, 1fr)\" gridTemplateRows=\"auto\">\n    <Element elementId=\"kpi-p1-rev\" gridColumn=\"1 / 6\" gridRow=\"1 / 8\"/>\n    <Element elementId=\"kpi-p1-profit\" gridColumn=\"6 / 11\" gridRow=\"1 / 8\"/>\n    <Element elementId=\"kpi-p1-margin\" gridColumn=\"11 / 16\" gridRow=\"1 / 8\"/>\n    <Element elementId=\"kpi-p1-orders\" gridColumn=\"16 / 21\" gridRow=\"1 / 8\"/>\n    <Element elementId=\"kpi-p1-units\" gridColumn=\"21 / 25\" gridRow=\"1 / 8\"/>\n  </Container>\n  <Container elementId=\"ctr-p1-charts\" type=\"grid\" gridColumn=\"1 / 25\" gridRow=\"18 / 42\" gridTemplateColumns=\"repeat(24, 1fr)\" gridTemplateRows=\"auto\">\n    <Element elementId=\"chart-p1-trend\" gridColumn=\"1 / 15\" gridRow=\"1 / 13\"/>\n    <Element elementId=\"chart-p1-mix\" gridColumn=\"15 / 25\" gridRow=\"1 / 13\"/>\n    <Element elementId=\"chart-p1-region\" gridColumn=\"1 / 13\" gridRow=\"13 / 25\"/>\n    <Element elementId=\"chart-p1-stores\" gridColumn=\"13 / 25\" gridRow=\"13 / 25\"/>\n  </Container>\n<Element elementId=\"tbl-p1\" gridColumn=\"1 / 25\" gridRow=\"42 / 54\"/>\n</Page>\n<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<Page type=\"grid\" gridTemplateColumns=\"repeat(24, 1fr)\" gridTemplateRows=\"auto\" id=\"page-products\">\n  <Container elementId=\"ctr-p2-hero\" type=\"grid\" gridColumn=\"1 / 25\" gridRow=\"1 / 6\" gridTemplateColumns=\"repeat(24, 1fr)\" gridTemplateRows=\"auto\">\n    <Element elementId=\"txt-p2-title\" gridColumn=\"1 / 25\" gridRow=\"1 / 6\"/>\n  </Container>\n  <Container elementId=\"ctr-p2-filters\" type=\"grid\" gridColumn=\"1 / 25\" gridRow=\"6 / 11\" gridTemplateColumns=\"repeat(24, 1fr)\" gridTemplateRows=\"auto\">\n    <Element elementId=\"ctrl-p2-date\" gridColumn=\"1 / 9\" gridRow=\"1 / 6\"/>\n    <Element elementId=\"ctrl-p2-region\" gridColumn=\"9 / 17\" gridRow=\"1 / 6\"/>\n    <Element elementId=\"ctrl-p2-ptype\" gridColumn=\"17 / 25\" gridRow=\"1 / 6\"/>\n  </Container>\n  <Container elementId=\"ctr-p2-kpis\" type=\"grid\" gridColumn=\"1 / 25\" gridRow=\"11 / 18\" gridTemplateColumns=\"repeat(24, 1fr)\" gridTemplateRows=\"auto\">\n    <Element elementId=\"kpi-p2-rev\" gridColumn=\"1 / 7\" gridRow=\"1 / 8\"/>\n    <Element elementId=\"kpi-p2-profit\" gridColumn=\"7 / 13\" gridRow=\"1 / 8\"/>\n    <Element elementId=\"kpi-p2-margin\" gridColumn=\"13 / 19\" gridRow=\"1 / 8\"/>\n    <Element elementId=\"kpi-p2-products\" gridColumn=\"19 / 25\" gridRow=\"1 / 8\"/>\n  </Container>\n  <Container elementId=\"ctr-p2-charts\" type=\"grid\" gridColumn=\"1 / 25\" gridRow=\"18 / 42\" gridTemplateColumns=\"repeat(24, 1fr)\" gridTemplateRows=\"auto\">\n    <Element elementId=\"chart-p2-brands\" gridColumn=\"1 / 13\" gridRow=\"1 / 13\"/>\n    <Element elementId=\"chart-p2-margin\" gridColumn=\"13 / 25\" gridRow=\"1 / 13\"/>\n    <Element elementId=\"chart-p2-tier\" gridColumn=\"1 / 9\" gridRow=\"13 / 25\"/>\n    <Element elementId=\"tbl-p2-detail\" gridColumn=\"9 / 25\" gridRow=\"13 / 25\"/>\n  </Container>\n<Element elementId=\"tbl-p2\" gridColumn=\"1 / 25\" gridRow=\"42 / 54\"/>\n</Page>\n<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<Page type=\"grid\" gridTemplateColumns=\"repeat(24, 1fr)\" gridTemplateRows=\"auto\" id=\"page-stores\">\n  <Container elementId=\"ctr-p3-hero\" type=\"grid\" gridColumn=\"1 / 25\" gridRow=\"1 / 6\" gridTemplateColumns=\"repeat(24, 1fr)\" gridTemplateRows=\"auto\">\n    <Element elementId=\"txt-p3-title\" gridColumn=\"1 / 25\" gridRow=\"1 / 6\"/>\n  </Container>\n  <Container elementId=\"ctr-p3-filters\" type=\"grid\" gridColumn=\"1 / 25\" gridRow=\"6 / 11\" gridTemplateColumns=\"repeat(24, 1fr)\" gridTemplateRows=\"auto\">\n    <Element elementId=\"ctrl-p3-date\" gridColumn=\"1 / 9\" gridRow=\"1 / 6\"/>\n    <Element elementId=\"ctrl-p3-region\" gridColumn=\"9 / 17\" gridRow=\"1 / 6\"/>\n    <Element elementId=\"ctrl-p3-tier\" gridColumn=\"17 / 25\" gridRow=\"1 / 6\"/>\n  </Container>\n  <Container elementId=\"ctr-p3-kpis\" type=\"grid\" gridColumn=\"1 / 25\" gridRow=\"11 / 18\" gridTemplateColumns=\"repeat(24, 1fr)\" gridTemplateRows=\"auto\">\n    <Element elementId=\"kpi-p3-stores\" gridColumn=\"1 / 7\" gridRow=\"1 / 8\"/>\n    <Element elementId=\"kpi-p3-revstore\" gridColumn=\"7 / 13\" gridRow=\"1 / 8\"/>\n    <Element elementId=\"kpi-p3-cust\" gridColumn=\"13 / 19\" gridRow=\"1 / 8\"/>\n    <Element elementId=\"kpi-p3-aov\" gridColumn=\"19 / 25\" gridRow=\"1 / 8\"/>\n  </Container>\n  <Container elementId=\"ctr-p3-charts\" type=\"grid\" gridColumn=\"1 / 25\" gridRow=\"18 / 42\" gridTemplateColumns=\"repeat(24, 1fr)\" gridTemplateRows=\"auto\">\n    <Element elementId=\"map-p3-stores\" gridColumn=\"1 / 15\" gridRow=\"1 / 13\"/>\n    <Element elementId=\"chart-p3-tier\" gridColumn=\"15 / 25\" gridRow=\"1 / 13\"/>\n    <Element elementId=\"chart-p3-cust\" gridColumn=\"1 / 13\" gridRow=\"13 / 25\"/>\n    <Element elementId=\"tbl-p3-board\" gridColumn=\"13 / 25\" gridRow=\"13 / 25\"/>\n  </Container>\n<Element elementId=\"tbl-p3\" gridColumn=\"1 / 25\" gridRow=\"42 / 54\"/>\n</Page>",
+    "settings": {
+      "theme": {
+        "overrides": {
+          "colors": {
+            "text": "#3b4238",
+            "highlight": "#198d00"
+          },
+          "categoricalScheme": [
+            "#198d00",
+            "#f2a93b",
+            "#3b4238",
+            "#7cb342",
+            "#00838f",
+            "#8d6e63",
+            "#5a6472",
+            "#b0407a"
+          ],
+          "sequentialScheme": "greens",
+          "divergingScheme": "redyellowgreen",
+          "fonts": {
+            "textFont": "Raleway",
+            "dataFont": "Inter"
+          },
+          "titleFont": {
+            "color": "#1d5c00",
+            "fontWeight": "bold"
+          },
+          "pageWidth": "large",
+          "space": {
+            "unit": "small"
+          }
+        }
+      }
+    }
+  }
+}
