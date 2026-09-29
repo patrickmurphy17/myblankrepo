@@ -254,3 +254,84 @@ Rules going forward:
   HTML stops triggering false positives.
 - `scripts/api/harvest-workbook.sh` → fail-fast on `service_error`
   responses with diagnostic message + cleanup of bogus spec.json.
+
+---
+
+## 2026-09-29 — API format migration + Webstaurant build
+
+**Incident.** Building the "Webstaurant Sales Command Center" workbook
+(notes in `workbooks/webstaurant-sales-command-center/notes.md`, generator
+`build_spec.py`) against a data model on the live org exposed that this
+skill described a pre-2026-09 API. Sequence:
+
+1. **POST attempt 1 rejected** - legacy nested shape (`pages[].elements`,
+   top-level `layout`, `themeOverrides`, `<GridContainer>`/`<LayoutElement>`)
+   sent to `POST /v2/workbooks/spec`: a giant union error whose paths all
+   started `0.document.`.
+2. **POST attempt 2 rejected** at `document.elements[1]` with the cryptic
+   `Invalid kind: "text"` - actually `verticalAlign: "middle"`; the enum is
+   `top | center | bottom`.
+3. **POST attempt 3 accepted** (`verticalAlign: "center"`); `verify-workbook.sh`
+   compiled all 53 elements. The workbook was created via the legacy
+   `/spec` path; the scripts/docs were then migrated to `POST /v2/workbooks`
+   and `PUT /v2/workbooks/{id}/contents`.
+4. **Render found what compile could not:** the "Total Revenue" KPI (with
+   `timeline` + `periodComparison` + `comparison`) showed $222M (latest
+   month) vs $10.3B in the charts; page-1 KPI row filled 20/24 columns; a
+   20-slice donut was unreadable; a map title overlapped its legend.
+5. **MCP 403:** `mcp-search.sh` / `mcp-describe.sh` returned HTTP 403 for
+   this API client; REST fallback (`GET /v2/files`, `GET /v2/dataModels/{id}/spec`)
+   worked. DM element columns showed formula-inferred friendly names and
+   `metrics` was null.
+6. The old OpenAPI URL (`help.sigmacomputing.com/openapi/...json`) 404'd.
+
+**Decision.** Upstream skill v0.3.0 (`vendor/sigma-agent-skills/skills/sigma-workbooks/`)
+adopted as the source of truth for the workbook API format. New exemplar
+`examples/data-model-sourced-webstaurant-command-center.json` (3 pages, 53
+flat elements, verified live: POST/PUT accepted, verify-workbook clean,
+rendered) is now the first exemplar to load; all other exemplars are
+LEGACY-SHAPE pattern references (convert with `scripts/convert-legacy-spec.py`).
+`sales-command-center` is no longer "canonical."
+
+Rules changed (all documented in the chunks named):
+
+- Endpoints: `POST /v2/workbooks` `{name, folderId, description?, contents}`;
+  `PUT /v2/workbooks/{id}/contents` `{contents, documentVersion?}`
+  (contents-only; rename/move via `PUT /v2/files/{fileId}`);
+  `GET /v2/workbooks/{id}?includeContents=true`. Legacy `/spec` still works
+  (`schema.md`, `crud.md`).
+- Pages are metadata only; `pages[].elements` rejected; flat
+  `contents.elements[]`; placement solely via layout XML; unplaced elements
+  rejected; element ids unique workbook-wide (`schema.md`, `layout.md`).
+- Layout tags `<Page>`/`<Container>`/`<Element>` (+ `<TabbedContainer>/<Tab>`,
+  `<Panel>`); never `<GridContainer>`/`<LayoutElement>` (`layout.md`,
+  `containers.md`, `text.md`, `others.md`).
+- `themeName`/`themeOverrides` removed -> `contents.settings.theme.{name?, overrides}` (`schema.md`).
+- `text.verticalAlign` = `top|center|bottom` (`text.md`).
+- Donut/pie/scatter-size/map channel pointers use `{columnId}`, not `{id}`
+  (`charts.md`, `maps.md`).
+- Container `backgroundImage` needs `source` wrapper; align enums
+  `left|center|right` / `top|center|bottom` (`containers.md`).
+- OpenAPI URL -> `assets.sigmacomputing.com/openapi/public-rest-api/...json`;
+  `CreateWorkbook`; readback wins over docs (`SKILL.md`, `schema.md`, `crud.md`).
+- KPI: "Total" tiles must not use `timeline`/`periodComparison`/`comparison`
+  (headline becomes the latest period). Upstream instead documents
+  `comparisonColumn` + `comparison` and says sparklines are UI-bound; recorded
+  both; org-observed behavior stands; `comparisonColumn` untested here
+  (`kpis.md`, `scope-and-edge-cases.md`, `conventions.md`).
+- Element-level KPI `layout:{anchor}` and `description:{visibility:hidden}`
+  dropped in the new-format build as unverified (`kpis.md`, `layout.md`).
+- Render is a required verification step (`render-workbook.sh`); KPI rows
+  use uneven spans when N does not divide 24; donut -> top-10 bar above ~7
+  categories (`validate.md`, `plan.md`, `conventions.md`).
+- Validator now has 19 checks (6 new: `request-shape`, `legacy-layout-tags`,
+  `element-ids-unique`, `text-vertical-align`, `channel-binding-shape`,
+  `kpi-latest-period-trap`) (`validate.md`).
+- MCP 403 fallback to REST (`discover.md`).
+- Retry protocol: the one-retry schema-drift fallback is right, but diagnose
+  from a live readback, parse union errors by path prefix, and treat
+  `Invalid kind: "<x>"` on an element as a generic error pointing at an
+  enum/field inside it (`crud.md`, `validate.md`).
+- Re-pull and check `documentVersion` before any PUT; keep a full-width
+  "source data" table on each page so source tables exist on a page
+  (`crud.md`, `conventions.md`).

@@ -211,12 +211,24 @@ bubble chart:
   "name": "Stores: Revenue vs Profit Margin",
   "xAxis": { "columnId": "sc-revenue" },
   "yAxis": { "columnIds": ["sc-margin"] },
-  "size": { "id": "sc-units" },
+  "size": { "columnId": "sc-units" },
   "color": { "by": "category", "column": "sc-region" }
 }
 ```
 
 ## Pie / donut chart
+
+> **Channel pointers use `{columnId}`, NOT `{id}`.** On `donut-chart` /
+> `pie-chart`, `value`, `color`, and `holeValue` are `{ "columnId": "..." }`
+> (same for scatter `size`, and the map channels in `maps.md`). `{ "id": ... }`
+> is a 400. `validate-spec.py` check `channel-binding-shape` catches it.
+> Bar/line `color: {by, column}` and axes (`columnId` / `columnIds`) are
+> unchanged.
+>
+> **Too many slices:** do not use a donut/pie above ~7 categories. A 20-slice
+> donut rendered unreadably in the 2026-09-29 build; use a ranked
+> **top-10 horizontal bar** (`orientation: "horizontal"`, sort descending,
+> `top-n` filter) instead.
 
 Uses `value` + `color` instead of `xAxis` / `yAxis`:
 
@@ -230,9 +242,9 @@ Uses `value` + `color` instead of `xAxis` / `yAxis`:
     { "id": "col-family", "name": "Family", "formula": "[Master/Product Family]" },
     { "id": "col-sales", "name": "Sales", "formula": "Sum([Master/Sales Amount])" }
   ],
-  "value": { "id": "col-sales" },
+  "value": { "columnId": "col-sales" },
   "color": {
-    "id": "col-family",
+    "columnId": "col-family",
     "sort": { "by": "col-sales", "direction": "descending" }
   }
 }
@@ -243,7 +255,7 @@ Uses `value` + `color` instead of `xAxis` / `yAxis`:
 Optional. References a donut column by ID — that column's aggregated
 value drives the hole label.
 
-**`holeValue.id` MUST reference a different column than `value.id`.**
+**`holeValue.columnId` MUST reference a different column than `value.columnId`.**
 POST rejects same-column reuse with:
 
 > `Column '<col-id>' is referenced from both 'value' and 'holeValue';
@@ -261,10 +273,10 @@ its own column:
     { "id": "col-sales",      "formula": "Sum([Master/Sales Amount])",  "name": "Sales" },
     { "id": "col-order-count","formula": "CountDistinct([Master/Order Id])", "name": "Orders" }
   ],
-  "value":     { "id": "col-sales" },
-  "holeValue": { "id": "col-order-count" },
+  "value":     { "columnId": "col-sales" },
+  "holeValue": { "columnId": "col-order-count" },
   "color": {
-    "id": "col-family",
+    "columnId": "col-family",
     "sort": { "by": "col-sales", "direction": "descending" }
   }
 }
@@ -280,7 +292,7 @@ Verified 2026-07-02: the distinct-column rule was surfaced when a
 ### Pie chart — same shape as donut
 
 ```json
-{ "id": "...", "kind": "pie-chart", "value": {...}, "color": {...} }
+{ "id": "...", "kind": "pie-chart", "value": {"columnId": "..."}, "color": {"columnId": "..."} }
 ```
 
 ## Cartesian-only optional features

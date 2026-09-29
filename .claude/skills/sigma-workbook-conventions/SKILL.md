@@ -5,8 +5,8 @@ description: >-
   or dashboard JSON spec in this repo — including whenever the user says
   "start build mode", mentions Sigma workbooks, dashboards, or specs, asks
   to build/edit/POST/PUT a workbook, references data models, KPIs, charts,
-  tables, controls, layouts, filters, maps, or the `/v2/workbooks/spec`
-  endpoint. Encodes project conventions on element naming, page/folder
+  tables, controls, layouts, filters, maps, or the `/v2/workbooks`
+  (or legacy `/v2/workbooks/spec`) endpoints. Encodes project conventions on element naming, page/folder
   layout, ID semantics on POST/PUT, secret handling, and common pitfalls
   when generating Sigma JSON specs. Pair with `sigma-data-models` for
   field-level reference, and with a domain-specific workbook-pattern
@@ -18,9 +18,25 @@ description: >-
 Project-wide conventions for Sigma workbook/data-model specs. Read this before
 generating or editing any `spec.json` in `workbooks/` or `examples/`.
 
+> **API format (2026-09) — read first.** The live workbook API changed and
+> the older docs/exemplars are stale. Current shape:
+>
+> - **CREATE** `POST /v2/workbooks` with `{name, folderId, description?, contents:{schemaVersion:1, kind:"workbook", pages, elements, layout, settings, ...}}`.
+>   **UPDATE** `PUT /v2/workbooks/{id}/contents` with `{contents:{...}, documentVersion?}` (contents-only; rename/move via `PUT /v2/files/{fileId}`).
+>   **READ** `GET /v2/workbooks/{id}?includeContents=true`.
+>   The legacy `POST /v2/workbooks/spec` (`{name, folderId, document}`) / `GET .../spec` path still works but is not the recommended path.
+> - **Pages are metadata only** (`{id, name, visibility?, pageWidth?, ...}`). `pages[].elements` is REJECTED. Elements live in ONE flat `contents.elements[]`; an element appears on a page/container only through the layout XML, and an unplaced element is rejected. Element ids are unique **workbook-wide**.
+> - **Layout tags are `<Page>`, `<Container>` (has children), `<Element>` (leaf)**. Never emit legacy `<GridContainer>` / `<LayoutElement>`.
+> - `themeName` / `themeOverrides` are removed; use `contents.settings.theme.{name?, overrides}`.
+> - `text.verticalAlign` is `top | center | bottom`. Donut/pie/map channel pointers use `{columnId}`, not `{id}`. Container `backgroundImage` needs the `source` wrapper.
+> - KPI "Total ..." tiles: one value column, no `timeline`/`periodComparison`/`comparison` (see `reference/specification/kpis.md` -> "Totals vs latest-period trap").
+> - **Render and LOOK before reporting**: `scripts/api/render-workbook.sh <workbook-id> [out-dir]`, then `Read` the PNGs.
+> - Signature of "you sent the old shape": a giant union error whose paths all start `0.document.`. See `reference/workflows/validate.md`.
+> - Old exemplars in `examples/` are LEGACY-SHAPE (see "Reference and examples"): run `scripts/convert-legacy-spec.py` first, never POST them verbatim.
+
 ## Inputs
 
-This skill is reference-only — no scripts. It assumes:
+This skill is reference-only (its scripts live at the workspace root). It assumes:
 
 - Sigma auth is bootstrapped by the repo-local `scripts/api/_env.sh`
   (see "Auth is auto-bootstrapped" below). The upstream `sigma-api`
@@ -28,7 +44,11 @@ This skill is reference-only — no scripts. It assumes:
   its `get-token.sh`.
 - `sigma-data-models` is available for endpoint mechanics and field semantics.
 - The local mirror at `vendor/sigma-agent-skills/` is available to consult when a
-  field-level question isn't answered here.
+  field-level question isn't answered here. In Claude Code web/cloud sessions
+  the upstream plugins are not auto-loaded, so this read-only mirror
+  (`scripts/refresh-vendor.sh`) is the reference; the upstream
+  `skills/sigma-workbooks/` copy is the source of truth for the current
+  workbook API format.
 
 ## Session kickoff
 
@@ -96,7 +116,7 @@ and stops — does NOT continue into Recon with broken auth.
 
 The kickoff captures **raw inputs**. It does NOT replace the plan-first workflow.
 
-After the kickoff, the agent proceeds through Recon → Plan proposal → User approval → Build → GET-back → Visual verify, per `docs/iteration-playbook.md`. **Plan approval is the only authorization for state-changing API calls** (POST/PUT to `/v2/workbooks/spec`, `/v2/dataModels/*/spec`). The 3-gate does not pre-authorize anything except the auth warm-up itself.
+After the kickoff, the agent proceeds through Recon → Plan proposal → User approval → Build → validate → POST/PUT → GET-back → verify → render & LOOK, per `docs/iteration-playbook.md`. **Plan approval is the only authorization for state-changing API calls** (POST/PUT to `/v2/workbooks*`, `/v2/dataModels/*/spec`). The 3-gate does not pre-authorize anything except the auth warm-up itself.
 
 ### Optional: session-local enrichment via `local-` prefix
 
@@ -164,12 +184,20 @@ This skill is verified-from-incident recipes + gotchas layered on top of
 two authoritative sources:
 
 1. **Sigma OpenAPI** — canonical schema for every request/response shape
-   and field. `https://help.sigmacomputing.com/openapi/sigma-computing-public-rest-api.json`
+   and field. Canonical compiled spec (~6.8MB):
+   `https://assets.sigmacomputing.com/openapi/public-rest-api/sigma-computing-public-rest-api.json`
+   (the old `help.sigmacomputing.com/openapi/...json` URL now 404s).
+   Workbook create body is `CreateWorkbook`; element kinds hang off
+   `#/components/schemas/WorkbookElement`. Per-endpoint pages:
+   `https://help.sigmacomputing.com/reference/<slug>`.
 2. **Existing workbooks on the user's org** — concrete working specs,
-   accessible via `GET /v2/workbooks/{id}/spec` (or via
+   accessible via `GET /v2/workbooks/{id}?includeContents=true` (or via
    `scripts/api/publish-workbook.sh get-spec <wb-id>`).
+3. **Upstream skill** — `vendor/sigma-agent-skills/skills/sigma-workbooks/`
+   (v0.3.0 adopted 2026-09-29).
 
-**When this skill and the OpenAPI disagree, the OpenAPI wins.** For the
+**When this skill and the OpenAPI disagree, the OpenAPI wins; when docs and
+a live readback disagree, the readback wins.** For the
 `jq` recipes to fetch and inspect the OpenAPI, and the schema-drift
 fallback protocol, see `reference/specification/schema.md` → "Consulting
 the OpenAPI" and "Schema-drift signal."
@@ -177,8 +205,8 @@ the OpenAPI" and "Schema-drift signal."
 ## Spec format — JSON or YAML
 
 The Sigma API accepts both `application/json` and `application/yaml`
-on `POST /v2/workbooks/spec`. **This skill's tooling defaults to JSON**
-— all canonical exemplars in `examples/` are `.json`,
+on the workbook create/update endpoints (legacy: `POST /v2/workbooks/spec`). **This skill's tooling defaults to JSON**
+— all exemplars in `examples/` are `.json`,
 `scripts/validate-spec.py` reads JSON, `scripts/workbook-manifest.py`
 reads JSON, `scripts/api/publish-workbook.sh` doesn't care.
 
@@ -200,7 +228,7 @@ session and cite chunk + section in the plan.
 
 | Task type | Required chunks |
 |---|---|
-| Every build (always) | `reference/conventions.md` + `reference/workflows/plan.md` + `reference/specification/schema.md` + `reference/specification/layout.md` |
+| Every build (always) | `reference/conventions.md` + `reference/workflows/plan.md` + `reference/specification/schema.md` + `reference/specification/layout.md` (+ `reference/workflows/validate.md` for the post-publish render step) |
 | Viz-heavy build (>2 chart kinds, KPI rows, pivots) | + each `reference/specification/<kind>.md` for the kinds in the plan (`charts.md`, `kpis.md`, `tables.md`, etc.) |
 | Formula-heavy build (custom calcs, metrics, Lookup, Rollup) | + `reference/specification/formulas.md` |
 | Conditional-formatting build (table/pivot cell coloring) | + `reference/specification/tables.md` |
@@ -270,7 +298,7 @@ don't re-propose.
 ### Approval model — plan is the only gate
 
 Plan approval authorizes **every state-changing API call covered by the
-plan, except DELETE**. POST/PUT to `/v2/workbooks/spec` and
+plan, except DELETE**. POST/PUT to `/v2/workbooks` (`/contents`, and the legacy `/spec`) and
 `/v2/dataModels/*/spec` run silently — `.claude/settings.json` allowlists
 both `Bash(scripts/api/*)` (which covers `publish-workbook.sh`) and the
 direct curl patterns. The user reviews one plan, approves, and the
@@ -358,8 +386,7 @@ Four rules carry most of the round-trip failures from prior sessions.
 Inline here as one-line summaries because they're too important to live
 only in chunks. **Read `reference/conventions.md` for the full versions**
 — required on every build per the hard gate above. These summaries are
-insurance, not substitutes. **Always visually verify** the workbook in
-the UI after a POST/PUT — the API doesn't validate cross-element column
+insurance, not substitutes. **Always visually verify** the workbook (`render-workbook.sh` PNGs, or the UI) after a POST/PUT — the API doesn't validate cross-element column
 resolution or visualization quality.
 
 1. **Passthrough is mandatory.** Every viz element declares the full
@@ -395,10 +422,20 @@ violated, ship a broken workbook.
 
 ## Publishing
 
-Use `scripts/api/publish-workbook.sh` for POST / PUT / GET / metadata —
-it auto-runs `validate-spec.py` before writes, injects auth, and 401-retries
-via `sigma_curl`. Full subcommand reference, DELETE via direct-curl, and
-the response-only-fields-to-strip list live in `reference/workflows/crud.md`.
+Use `scripts/api/publish-workbook.sh` — `post <spec>` (validates,
+auto-converts legacy files, `POST /v2/workbooks`), `put <workbook-id> <spec>`
+(validates; sends `{contents, documentVersion}` to `PUT /v2/workbooks/{id}/contents`),
+`get-spec <workbook-id>`, `get-meta <workbook-id>`, `render <workbook-id> [out-dir]`.
+It injects auth and 401-retries via `sigma_curl`. Then run
+`scripts/api/verify-workbook.sh <id>` (compile check) and
+`scripts/api/render-workbook.sh <id> [out-dir]` (one PNG per page — `Read`
+the PNGs; needs `ruby` and the vendor mirror). Full subcommand reference,
+DELETE via direct-curl, and the response-only-fields list live in
+`reference/workflows/crud.md`. Before any PUT, re-pull the workbook and check
+`documentVersion` (a human may have edited it in the UI).
+
+Old-shape specs: `python3 scripts/convert-legacy-spec.py <in.json> [-o out.json] [--put]`
+(best-effort; always re-validate and render).
 
 ## Reference and examples
 
@@ -428,14 +465,15 @@ mapping.
 
 - `plan.md` — the 6-section plan format, `Chunks Read:` requirement,
   plan-is-the-only-gate approval model. **Required on every build.**
-- `crud.md` — POST/GET/PUT mechanics + ID preservation on POST +
-  response-only fields to strip on PUT + the `publish-workbook.sh`
-  wrapper.
+- `crud.md` — `POST /v2/workbooks` / `PUT .../contents` / `GET ?includeContents=true`
+  mechanics (legacy `/spec` path noted) + ID preservation on POST +
+  `documentVersion` + response-only fields + the `publish-workbook.sh`
+  wrapper + schema-drift protocol.
 - `discover.md` — `mcp-search.sh` / `mcp-describe.sh` sequencing,
   REST fallbacks, friendly-vs-raw warehouse name normalization.
-- `validate.md` — `validate-spec.py` (pre-submit, 13 checks) +
-  `verify-workbook.sh` (post-create compilation check) + cryptic-error
-  decoding table.
+- `validate.md` — `validate-spec.py` (pre-submit, 19 checks) +
+  `verify-workbook.sh` (post-create compilation check) +
+  `render-workbook.sh` (visual verify) + cryptic-error decoding table.
 - `from-image.md` — image-to-spec workflow (screenshot, mockup,
   PDF, BI-tool export). Load BEFORE data discovery when the user
   supplies a target image.
@@ -445,28 +483,28 @@ mapping.
 Per-element-kind recipes + gotchas. Each file opens with the relevant
 OpenAPI `jq` recipe.
 
-- `schema.md` — top-level workbook spec shape, response-only fields,
-  ID preservation on POST, top-level `folders` + `themeOverrides` +
+- `schema.md` — `{name, folderId, contents}` shape, pages-as-metadata,
+  response-only fields, workbook-wide ID rules, `settings.theme`,
   `theme` element kind, minimal working example.
 - `formulas.md` — formula DSL: column-reference rules,
   `[Metrics/<X>]`, boolean operators trap (`Not` requires space),
   JSON dot notation, window functions, `&` for string concat.
 - `formatting.md` — d3-format + strftime cheat sheets, SI prefix
   currency.
-- `layout.md` — top-level layout XML (24-col grid), XML-vs-object
-  `layout` distinction, `<GridContainer>` vs `<LayoutElement>`
-  silent failure, `gridTemplateRows` normalization quirk,
-  page-structure pattern.
+- `layout.md` — `contents.layout` XML (24-col grid), flat elements +
+  placement rule, XML-vs-object `layout` distinction, `<Container>` vs
+  `<Element>` (a childful `<Element>` is a leaf), `gridTemplateRows`
+  normalization quirk, page-structure pattern.
 - `containers.md` — `kind: container` + `style` (bg + border) +
-  `backgroundImage` (object with fit/align/tiling), 5-recipe catalog.
+  `backgroundImage` (`source` wrapper + fit/align/tiling), 5-recipe catalog.
 - `charts.md` — bar/line/area/combo/scatter/pie/donut + canonical
   `columnId`/`columnIds` axis shape + `refMarks` + `trendlines` +
   `dataLabel`/`seriesDataLabel` + 3-variant `color` channel
   (single/category/scale) + `top-n` filter fields + `gap` for bar
   spacing.
-- `kpis.md` — `kpi-chart` shape (`value.columnId`), sparkline via
-  date dimension, styled-name object form, element-level `layout`
-  object (`anchor`), polymorphic `description`, no-delta limitation.
+- `kpis.md` — `kpi-chart` shape (`value.columnId`), **totals vs
+  latest-period trap** (`timeline`/`periodComparison`/`comparison`),
+  styled-name object form, polymorphic `description`.
 - `tables.md` — `table` + `pivot-table` + `input-table` (minimal) +
   `conditionalFormats` (4 variants) + `tableStyle` +
   `tableComponents` + styled-name + `noDataText` + `summary` bar.
@@ -490,30 +528,41 @@ OpenAPI `jq` recipe.
   prefixes + friendly-name normalization.
 - `sources.md` — `table` / `data-model` / `join` / `union` / `sql` /
   `transpose` source kinds + two-tier sourcing pattern reference.
-- `example-full.yaml` — verbatim multi-page reference spec from the
-  upstream skill (KPIs, charts, join sources, controls, custom
-  layout). Read this when in doubt about overall shape.
+- `example-full.yaml` — multi-page reference spec (KPIs, charts, join
+  sources, controls, custom layout). **This local copy is LEGACY-SHAPE**
+  (nested `pages[].elements`, `<GridContainer>`/`<LayoutElement>`): use it
+  for element patterns only; the current-format equivalent is upstream's
+  `vendor/sigma-agent-skills/skills/sigma-workbooks/reference/specification/example-full.yaml`.
 
-`examples/` — known-good specs to seed generation. Clone-and-modify rather
-than editing in place. Match your task to the closest exemplar below;
-`.prompt.md` sidecars (where present) describe the design intent.
+`examples/` — known-good specs to seed generation. `.prompt.md` sidecars
+(where present) describe the design intent.
 
-- **Minimal / single-page:**
+> **Format warning.** Only the first exemplar below is in the current
+> format (`contents`-wrapped, flat `elements`, `<Container>`/`<Element>`,
+> `settings.theme`). **Every other exemplar is LEGACY-SHAPE** (nested
+> `pages[].elements`, top-level `layout`/`themeOverrides`,
+> `<GridContainer>`/`<LayoutElement>`). Keep them as *pattern references
+> only*; to reuse one, run `python3 scripts/convert-legacy-spec.py <in> -o <out>`,
+> re-run `scripts/validate-spec.py`, and render. Never POST them verbatim.
+
+- **Current format (load first for any modern multi-page build):**
+  - `data-model-sourced-webstaurant-command-center.json` (2026-09-29) — 3 pages, 53 flat elements, `contents`-wrapped; verified live (POST/PUT accepted, `verify-workbook.sh` all compile, rendered and visually checked). Paired with `.prompt.md`. Generator: `workbooks/webstaurant-sales-command-center/build_spec.py`. **First exemplar to load for any modern multi-page build.**
+- **Minimal / single-page (legacy shape):**
   - `data-model-sourced-overview.json` — smallest data-model-fed dashboard.
-  - `data-model-sourced-single-page-inventory-health.json` (2026-07-02) — 10-element single-page dashboard with conditional formatting + two shared controls filtering multiple elements. Canonical minimal ops-triage exemplar. Paired with `.prompt.md`.
-- **Modern 3-page workbook (canonical):**
-  - `data-model-sourced-sales-command-center.json` (2026-07-02) — 50-element 3-page workbook exercising every 2026-06/2026-07 skill fix (segmented control variants, `gap` safe default, distinct-column `holeValue`, KPI `value.columnId`, element `layout.anchor`, `themeOverrides`, styled `name`, card `style`, hierarchy control, `list + single`). Paired with `.prompt.md`. **First exemplar to load for any modern multi-page build.**
+  - `data-model-sourced-single-page-inventory-health.json` (2026-07-02) — 10-element single-page dashboard with conditional formatting + two shared controls filtering multiple elements. Minimal ops-triage pattern. Paired with `.prompt.md`.
+- **3-page workbook (legacy shape; pattern reference):**
+  - `data-model-sourced-sales-command-center.json` (2026-07-02) — 50-element 3-page workbook exercising every 2026-06/2026-07 skill fix (segmented control variants, `gap` safe default, distinct-column `holeValue`, KPI `value.columnId`, element `layout.anchor`, `themeOverrides`, styled `name`, card `style`, hierarchy control, `list + single`). Paired with `.prompt.md`. No longer the canonical multi-page exemplar (superseded by the Webstaurant one above).
   - `data-model-sourced-exec-kpi-scorecard.json` (2026-07-02, post-fix) — 35-element exec-review workbook with pivot calculated PoP % delta column, US-state `region-map`, scatter for outlier detection, and two-tier anomaly-detection derived table (`groupings` + conditional-Sum, NOT `Rollup`). Paired with `.prompt.md`. Clone when the ask includes geographic viz or anomaly detection.
-- **Catalog / kitchen-sink** (chart-kind + control-type coverage):
+- **Catalog / kitchen-sink** (legacy shape; chart-kind + control-type coverage):
   - `data-model-sourced-multi-element-catalog.json` — 6 chart kinds, 3 KPIs, 4 control types, multi-level `groupings`.
   - `data-model-sourced-multi-level-aggregated-table.json` — combo-chart shape reference.
   - `additional-workbook-features-chart-and-control-catalog.json` — area stacking, pie chart, scatter.
-- **Pattern-specific:**
+- **Pattern-specific (legacy shape):**
   - `data-model-sourced-cohort-pivot.json` — two-tier sourcing (raw → derived) + `Rollup` + weeks-since-first-action pivot. Clone for cohort/retention.
   - `data-model-sourced-multi-page-profitability-attrition.json` — 4-page reference with per-page source tables + `Lookup()` demographic passthrough.
   - `styled-card-dashboard.json` — five-recipe element styling system (card framing, accent borders, subtle controls). Paired with `.prompt.md`.
 - **Deprecated (kept for archaeological reference only):**
-  - `data-model-sourced-kpi-overview-with-containers.json` — predates the 2026-07-02 KPI `value.columnId` fix + `controlId` collision rule. Do NOT clone verbatim; use `data-model-sourced-sales-command-center.json` instead.
+  - `data-model-sourced-kpi-overview-with-containers.json` — predates the 2026-07-02 KPI `value.columnId` fix + `controlId` collision rule. Do NOT clone verbatim; use `data-model-sourced-webstaurant-command-center.json` instead.
 
 For data-model field-level mechanics (columns, metrics, relationships,
 filters, controls, formatting, folders, column-level security, workflows)

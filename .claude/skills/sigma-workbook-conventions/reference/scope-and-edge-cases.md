@@ -27,16 +27,15 @@ addressable in the spec, and a GET-back of a UI-configured workbook will
 not necessarily round-trip every visual setting. Known examples (treat as
 limitations, not bugs to fix):
 
-- **KPI period-comparison configuration** (e.g. "vs prior month" vs "vs
-  prior quarter"): the spec only carries the date-dimension column on the
-  KPI's `columns` array. The actual comparison period Sigma renders from
-  that column is UI-side state and isn't surfaced in the GET response. If
-  a user needs a specific comparison period, configure it in the UI;
-  don't try to set it in the spec. **Narrowed 2026-05-19:** KPI title
-  color, font size, weight, and the element frame (border) ARE spec-able
-  via the styled-name object and the `style` field — see
-  `reference/specification/kpis.md` → "Title styling." Only the
-  comparison-period and sparkline-toggle remain UI-only on KPIs.
+- **KPI period-comparison (updated 2026-09-29):** the current API accepts
+  `timeline: {columnId}` + `periodComparison` + `comparison` on `kpi-chart`
+  and renders a sparkline + delta, BUT the headline value then becomes the
+  latest period's value, not the total. Do not use them on "Total ..."
+  tiles - see `reference/specification/kpis.md` -> "Totals vs latest-period
+  trap." (Earlier text here said comparison was UI-only; that is stale.)
+  KPI title color, font size, weight, and the element frame (border) ARE
+  spec-able via the styled-name object and the `style` field - see
+  `kpis.md` -> "Title styling."
 
 - **Chart series colors** beyond the `color.scheme` palette:
   per-chart-spec `color: {by, column, scheme}` lets you set positional
@@ -72,6 +71,10 @@ that property lives outside the code representation. Note it here and
 move on — don't burn iterations searching for a field that doesn't exist.
 
 ## GET-spec 500
+
+> "GET-spec" = the readback (`GET /v2/workbooks/{id}?includeContents=true`, or
+> legacy `GET /v2/workbooks/{id}/spec`). The 500 behavior below was observed
+> on the legacy endpoint; whether it is identical on the new one is unverified.
 
 The GET-spec endpoint can return HTTP 500 (`code: service_error`) on a
 workbook that's otherwise healthy — open-able in the UI, listed in

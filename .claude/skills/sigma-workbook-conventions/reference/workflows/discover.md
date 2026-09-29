@@ -25,6 +25,16 @@ formulas, and the metrics catalog. Replaces hand-walking `GET
 `scripts/api/mcp-search.sh` and `mcp-describe.sh` call Sigma's MCP
 server (`/mcp/v2`) using the same OAuth token as the REST API.
 
+> **MCP 403 fallback (seen 2026-09-29).** `mcp-search.sh` / `mcp-describe.sh`
+> return HTTP 403 for some API clients (the MCP server is not enabled for
+> that client). Do not retry in a loop - switch to REST: `GET /v2/files?limit=..`
+> to locate ids (or `scripts/api/whoami.sh`, `find-file-by-urlid.sh`,
+> `list-folders.sh`), and `GET /v2/dataModels/{id}/spec` for a data model's
+> elements, columns, and metrics. Caveats on that readback: element columns
+> show *inferred friendly names derived from their formulas*, and `metrics`
+> may be `null` (then no `[Metrics/...]` references are safe; use column
+> formulas traced to the readback). See "Discovery via REST primitives."
+
 ### Searching the workspace
 
 ```bash
@@ -106,8 +116,8 @@ warehouse-column renames.
 
 ## Discovery via REST primitives (fallbacks)
 
-The MCP wrappers cover ~90% of discovery needs. Reach for these only
-when MCP doesn't:
+The MCP wrappers cover ~90% of discovery needs when they are authorized
+for your API client. Reach for these when MCP doesn't (including HTTP 403):
 
 ```bash
 # List connections
@@ -124,6 +134,10 @@ scripts/api/list-folders.sh "<name-substring>"
 
 # Probe a schema for table inventory
 scripts/api/probe-schema-tables.sh <connection-id> "<DB>.<SCHEMA>"
+
+# When MCP returns 403: locate files, then read the data model spec
+#   GET /v2/files?limit=..            (find ids)
+#   GET /v2/dataModels/{id}/spec      (elements, columns, metrics - metrics may be null)
 ```
 
 These hit `/v2/connections`, `/v2/connection/<id>/lookup`,
@@ -199,8 +213,8 @@ is more aggressive than it looks. Reliable workflow:
 
 1. POST with your best guess (raw names often work for ALL_CAPS).
 2. Run `scripts/api/verify-workbook.sh <wb-id>`.
-3. If any element compiles to `'Unknown column "[X]"'`, GET the spec
-   back — Sigma's readback shows the canonical friendly names.
+3. If any element compiles to `'Unknown column "[X]"'`, GET the workbook
+   back (`get-spec`) — Sigma's readback shows the canonical friendly names.
 4. Update formulas in your spec and re-PUT.
 
 See `reference/specification/formulas.md` → "Raw vs. friendly names"

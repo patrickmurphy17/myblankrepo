@@ -21,6 +21,7 @@ The plan's `Chunks Read:` line must list this file.
 - [Bar-chart orientation + categorical-axis sort rule](#bar-orientation)
 - [Summary-bar pattern (aggregate-then-categorize)](#summary-bar)
 - [Two-tier sourcing (warehouse → derived)](#two-tier-sourcing)
+- [KPI totals vs latest period, workbook-wide ids, render before you report](#format-2026-09-rules)
 - [Notes-promotion guardrail](#notes-promotion)
 
 ---
@@ -427,7 +428,38 @@ Then KPIs, charts, and pivots source from the derived table. This
 keeps the first-order math out of the viz elements (avoiding
 recursive aggregation) and makes the derivation chain inspectable.
 
-Canonical example: `examples/data-model-sourced-cohort-pivot.json`.
+Example: `examples/data-model-sourced-cohort-pivot.json` (LEGACY-SHAPE
+exemplar - pattern reference only; run `scripts/convert-legacy-spec.py`
+before reuse).
+
+---
+
+<a id="format-2026-09-rules"></a>
+## KPI totals vs latest period, workbook-wide ids, render before you report
+
+Three rules added 2026-09-29 (API format migration; see `reference/history.md`).
+
+1. **KPI totals vs latest period.** A "Total ..." KPI uses ONE value
+   column: no `timeline`, no `periodComparison`, no `comparison`, and no
+   non-aggregated date column in `columns`. With `timeline` +
+   `periodComparison` the headline becomes the LATEST PERIOD's value
+   (a "Total Revenue" tile showed $222M against $10.3B in the charts).
+   Use those fields only for tiles explicitly labelled "latest month".
+   Full detail: `reference/specification/kpis.md` -> "Totals vs
+   latest-period trap." Validator: `kpi-latest-period-trap` (WARN).
+2. **Element ids are unique workbook-wide.** `contents.elements` is one
+   flat array, so the same id on two pages collides (not just within a
+   page). Prefix ids per page (`ov-`, `tr-`, `dt-`). Validator:
+   `element-ids-unique` (FAIL). Also: every element must be placed in the
+   layout XML, and a source table required by visuals must exist on some
+   page (keep a full-width "source data" table at the bottom of each page).
+3. **Render before you report.** After POST/PUT and `verify-workbook.sh`,
+   run `scripts/api/render-workbook.sh <wb-id> [out-dir]` and `Read` the
+   PNGs. Compile success is not correctness: rendering caught the KPI
+   latest-month problem, a 5-tile KPI row filling 20/24 columns (use spans
+   5,5,5,5,4), a 20-slice donut (use a top-10 horizontal bar above ~7
+   categories), and a map title/legend overlap. Before any later PUT,
+   re-pull and check `documentVersion` (a human may have edited it).
 
 ---
 
@@ -452,5 +484,5 @@ contain in-flight wrong hypotheses.
 - `reference/workflows/plan.md` — the plan-first workflow that
   enforces these rules at the planning gate.
 - `reference/scope-and-edge-cases.md` — what doesn't round-trip
-  through GET-spec (ryan-specific edge cases observed on this org).
+  through GET-spec / `GET ?includeContents=true` (ryan-specific edge cases observed on this org).
 - `reference/history.md` — the dated incident log behind each rule.

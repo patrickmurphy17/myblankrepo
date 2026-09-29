@@ -41,32 +41,56 @@ aggregated value.
 - `format` on the column controls displayed format. See
   `formatting.md`.
 
-## With sparkline / period-over-period comparison
+## Totals vs latest-period trap (READ BEFORE ADDING A TIMELINE)
 
-The KPI's `columns` array should include a date-dimension column.
-Sigma renders the sparkline + period comparison automatically from
-that column:
+> **Observed by rendering on this org (2026-09-29).** A `kpi-chart` with
+> `timeline: {columnId}` + `periodComparison: "month"` +
+> `comparison: {display: "delta", colorGood, colorBad}` renders a sparkline
+> and a "Sep vs Aug" delta - **but the headline value becomes the LATEST
+> PERIOD's value, not the all-time total.** A tile titled "Total Revenue"
+> showed $222M while the charts on the same page summed to $10.3B. The
+> spec POSTed and compiled cleanly; only the rendered PNG exposed it.
 
 ```json
 {
-  "id": "kpi-revenue",
+  "id": "ov-kpi-latest-month-revenue",
   "kind": "kpi-chart",
-  "name": "Total Revenue",
-  "source": { "kind": "table", "elementId": "sales-table" },
+  "name": "Latest Month Revenue",
+  "source": { "kind": "table", "elementId": "ov-src" },
   "columns": [
-    { "id": "kpi-rev-value", "formula": "[Metrics/Total Revenue]",
-      "format": { "kind": "number", "formatString": "$,.0f" } },
-    { "id": "kpi-rev-month", "formula": "DateTrunc(\"month\", [Date])",
-      "name": "Month" }
+    { "id": "v", "formula": "Sum([ov-src/Revenue])", "format": { "kind": "number", "formatString": "$,.0f" } },
+    { "id": "m", "formula": "DateTrunc(\"month\", [ov-src/Date])", "name": "Month" }
   ],
-  "value": { "columnId": "kpi-rev-value" }
+  "value": { "columnId": "v", "fontSize": 30 },
+  "timeline": { "columnId": "m" },
+  "periodComparison": "month",
+  "comparison": { "display": "delta", "colorGood": "#198d00", "colorBad": "#d0021b" }
 }
 ```
 
-**KPIs without a date-dimension column lose the most analytical
-value.** A naked number with no comparison context is hard to
-interpret. Include the date dimension in `columns` even if it's not
-the `value.columnId`.
+**Rules:**
+
+- **"Total ..." tiles:** use ONE value column. No `timeline`, no
+  `periodComparison`, no `comparison`, and never add a non-aggregated date
+  column to `columns` (it can turn the tile into a latest-period value).
+- Use `timeline` / `periodComparison` / `comparison` **only** for tiles
+  explicitly labelled "latest month" (or similar), e.g. "Latest Month
+  Revenue".
+- **Reconcile after render:** the KPI headline should equal the sum of the
+  chart that shows the same measure. Look at the PNG (`render-workbook.sh`).
+- `value` accepts `fontSize` (30 stopped big-number clipping in the
+  Webstaurant build).
+
+**Local vs upstream disagree (both recorded):** upstream says
+sparklines / period-comparison are UI-bound, and the spec-authorable delta
+is `comparisonColumn: {columnId}` + `comparison: {display: "delta"}`
+comparing two columns you compute (e.g. current vs prior value). The
+org-observed behavior above (`timeline` + `periodComparison` accepted and
+rendered, with the latest-period headline) is what actually happened on
+2026-09-29; `comparisonColumn` was not tested here (unverified locally).
+Older versions of this file claimed the date-dimension column alone
+"enables" a sparkline/comparison automatically - treat that as stale and
+unverified.
 
 ## Title styling (styled-name object form)
 
@@ -90,7 +114,7 @@ Or hide the title bar entirely:
 Verified fields: `text`, `color` (hex), `fontWeight` (`"bold"`,
 `"normal"`, likely `"600"` etc.), `fontSize` (pixel number),
 `visibility` (`"hidden"` so far). See `examples/styled-card-dashboard.json`
-for KPI tiles using the styled-name form with `fontSize: 32`.
+(legacy-shape exemplar) for KPI tiles using the styled-name form with `fontSize: 32`.
 
 ## Element-level styling
 
@@ -109,21 +133,12 @@ elements:
 the container behind shows through. See `containers.md` →
 "Common style recipes" for the full recipe catalog.
 
-## Element-level `layout` object
+## Element-level `layout` object (legacy; unverified in the current format)
 
-Distinct from the top-level layout XML. On KPIs, a `layout` object
-controls in-tile anchor positioning of the value:
-
-```json
-"layout": { "anchor": "middle" }
-```
-
-Observed values: `"middle"`. Presumably `"start"` / `"end"` supported;
-inspect the OpenAPI. Verified 2026-07-02 across `sales-mbr-sentinel`
-(18 KPIs).
-
-See `layout.md` → "Two flavors: XML layout vs. element-level `layout`
-object" for the distinction.
+Older exemplars put `"layout": { "anchor": "middle" }` on a KPI to anchor
+the value in the tile (observed 2026-07-02 on `sales-mbr-sentinel`). The
+2026-09-29 new-format build dropped it as unverified. Omit it unless you
+confirm it against a live readback. See `layout.md` -> "Two flavors".
 
 ## Description must be an object
 
@@ -141,7 +156,8 @@ Correct shapes:
 ```
 
 Setting `visibility: "hidden"` removes the description line from the
-tile entirely. Verified 2026-07-02 across `sales-mbr-sentinel` KPIs
+tile entirely (dropped as unverified in the 2026-09-29 new-format build -
+omit `description` instead unless you need it). Verified 2026-07-02 across `sales-mbr-sentinel` KPIs
 and `inventory-health` build (1 POST retry on string-form rejection).
 Same rule applies to tables — see `tables.md` → "Styled name +
 description + noDataText."
@@ -246,12 +262,13 @@ based on whether the user wants drill-down support. Use judgment.
 
 ## Known limitations
 
-- **No `delta` / comparison field on the KPI element.** The spec
-  carries the date-dimension column that *enables* comparison mode;
-  the specific period (vs prior month / quarter / year) is UI-side
-  state and isn't represented in the code spec. To force a specific
-  comparison period, stack two `kpi-chart` elements side-by-side via
-  layout XML.
+- **Period comparison changes the headline value.** See "Totals vs
+  latest-period trap" above: `timeline` + `periodComparison` + `comparison`
+  are accepted and render a sparkline + delta, but the headline becomes the
+  latest period. Do not use them on "Total ..." tiles. Upstream's
+  spec-authorable alternative is `comparisonColumn` + `comparison`
+  (unverified here). To force a fixed comparison, you can also stack two
+  `kpi-chart` elements side-by-side via layout XML.
 - **No `target` / `goal` field.** To show a value vs. a target,
   build a chart with two columns (value + target) instead.
 
@@ -259,4 +276,5 @@ based on whether the user wants drill-down support. Use judgment.
 
 A KPI with a sparkline needs ~8-10 grid rows of vertical space. A
 3-row KPI with timeline comparison renders the sparkline too small
-to read. See `layout.md` for grid placement.
+to read. For a row of N tiles that does not divide 24, use uneven spans
+(5 tiles -> 5,5,5,5,4) so the row fills all 24 columns. See `layout.md` for grid placement.

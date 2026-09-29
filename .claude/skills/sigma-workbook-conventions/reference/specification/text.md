@@ -15,18 +15,24 @@ jq '.components.schemas.Text' /tmp/sigma-api.json
   "id": "text-header",
   "kind": "text",
   "body": "## **Sales Overview**\n\nA weekly view of revenue and growth.",
-  "verticalAlign": "middle",
+  "verticalAlign": "center",
   "overflow": "clip"
 }
 ```
 
 | Field | Required | Notes |
 |---|---|---|
-| `id` | yes | Unique on the page |
+| `id` | yes | Unique workbook-wide |
 | `kind` | yes | Always `"text"` |
 | `body` | yes | Markdown string (subset — see below) |
-| `verticalAlign` | no | `"start"` (top, default), `"middle"`, `"end"` (bottom) |
+| `verticalAlign` | no | `"top"` (default), `"center"`, `"bottom"` - **not** `start`/`middle`/`end` (see note below) |
 | `overflow` | no | `"clip"` (default) or `"scroll"` |
+
+> **`verticalAlign` enum is `top | center | bottom`.** Older docs said
+> `start | middle | end`; the API rejects those. `"middle"` produces the
+> cryptic `document.elements[i]: Invalid kind: "text"` (a generic error:
+> the fault is the enum, not the kind). `scripts/validate-spec.py` check
+> `text-vertical-align` catches it.
 
 **Note:** `text` elements have no `name` or `source` field, unlike most
 other element kinds. The body itself IS the content; the element has no
@@ -114,34 +120,34 @@ Use this for:
 
 Text elements participate in the page grid like any other element.
 
-**Page-level title row above a `<GridContainer>`:**
+**Page-level title row above a `<Container>`:**
 
 ```xml
-<LayoutElement elementId="text-header" gridColumn="1 / 25" gridRow="1 / 4"/>
-<GridContainer elementId="header-row" type="grid" ...>
+<Element elementId="text-header" gridColumn="1 / 25" gridRow="1 / 4"/>
+<Container elementId="header-row" type="grid" ...>
   ...
-</GridContainer>
+</Container>
 ```
 
 **Inside a container, on its own row above the chart row** (see
 `layout.md` → "Stacking children inside a container"):
 
 ```xml
-<GridContainer elementId="header-row" type="grid" gridColumn="1 / 25" gridRow="1 / 12" ...>
-  <LayoutElement elementId="text-header" gridColumn="1 / 25" gridRow="1 / 4"/>
-  <LayoutElement elementId="kpi-1"       gridColumn="1 / 9"  gridRow="4 / 12"/>
-  <LayoutElement elementId="kpi-2"       gridColumn="9 / 17" gridRow="4 / 12"/>
-  <LayoutElement elementId="kpi-3"       gridColumn="17 / 25" gridRow="4 / 12"/>
-</GridContainer>
+<Container elementId="header-row" type="grid" gridColumn="1 / 25" gridRow="1 / 12" ...>
+  <Element elementId="text-header" gridColumn="1 / 25" gridRow="1 / 4"/>
+  <Element elementId="kpi-1"       gridColumn="1 / 9"  gridRow="4 / 12"/>
+  <Element elementId="kpi-2"       gridColumn="9 / 17" gridRow="4 / 12"/>
+  <Element elementId="kpi-3"       gridColumn="17 / 25" gridRow="4 / 12"/>
+</Container>
 ```
 
 **Side-by-side with a control on the same row:**
 
 ```xml
-<GridContainer elementId="header-row" type="grid" ...>
-  <LayoutElement elementId="text-header"     gridColumn="1 / 18"  gridRow="1 / 4"/>
-  <LayoutElement elementId="ctrl-date-range" gridColumn="18 / 25" gridRow="1 / 4"/>
-</GridContainer>
+<Container elementId="header-row" type="grid" ...>
+  <Element elementId="text-header"     gridColumn="1 / 18"  gridRow="1 / 4"/>
+  <Element elementId="ctrl-date-range" gridColumn="18 / 25" gridRow="1 / 4"/>
+</Container>
 ```
 
 ## Text elements do not carry `style`

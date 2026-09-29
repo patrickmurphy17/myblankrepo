@@ -140,11 +140,15 @@ scripts/api/publish-workbook.sh post workbooks/<name>/iterations/<file>.json
 ```
 
 The wrapper:
-- Runs `validate-spec.py` first (fail-fast on per-page layout, unplaced
-  elements, empty containers, malformed column `format` shape, duplicate
-  `controlId`, passthrough collapse on charts/pivots, and controlId/column
-  collision on filtered elements).
-- POSTs to `/v2/workbooks/spec` via the `sigma_curl` helper, which auto-
+- Runs `validate-spec.py` first (19 checks: fail-fast on per-page layout,
+  unplaced elements, empty containers, malformed column `format` shape,
+  duplicate `controlId`, passthrough collapse on charts/pivots,
+  controlId/column collision, and the 2026-09 format checks: request shape,
+  legacy layout tags, workbook-wide element ids, `text.verticalAlign`,
+  `{columnId}` channel pointers, KPI latest-period trap). Old-shape files are
+  auto-converted on `post`.
+- POSTs to `/v2/workbooks` (body `{name, folderId, contents}`; `put` uses
+  `PUT /v2/workbooks/{id}/contents` with `documentVersion`) via the `sigma_curl` helper, which auto-
   injects `Authorization` and `Accept: application/json` headers and
   retries once on HTTP 401 (cache eviction + refetch). No env-prelude,
   no manual token chaining.
@@ -157,11 +161,16 @@ mode 0600 and gitignored; tokens never cross a tool boundary.
 ### 6. Read the response
 
 - **HTTP 400** → read the `message` and iterate the spec. The error usually
-  names the element + path (`pages[0].elements[1]: ...`). Save the new
+  names the element + path (`document.elements[1]: ...`). A giant union error
+  whose paths all start `0.document.` means you sent the old nested shape;
+  `Invalid kind: "<x>"` is generic (suspect an enum inside that element). Save the new
   attempt as a fresh `iterations/<NEW-TIMESTAMP>.json` — don't overwrite.
 - **HTTP 200** → response includes `workbookId`. Proceed to GET-back.
 
 ### 7. GET back; that's the new source of truth
+
+(`get-spec` = `GET /v2/workbooks/{id}?includeContents=true`, which returns
+`contents` + `documentVersion`.)
 
 ```bash
 scripts/api/publish-workbook.sh get-spec <workbookId> \
@@ -174,12 +183,18 @@ auto-fill default fields. The GET, not your input, is the new baseline.
 
 ### 8. Visually verify
 
-Open the workbook URL. Confirm every element actually renders with data:
+Run `scripts/api/render-workbook.sh <workbookId> [out-dir]` (needs `ruby` and
+the vendor mirror) and `Read` each PNG; opening the workbook URL is the
+fallback. Confirm every element actually renders with data:
 
 - KPIs show numbers (not blank, not NaN, format applied).
 - Charts have axes with values, sort order matches expectation.
 - Controls populate with values and filter every dependent element.
 - Table shows the columns and rows you expected.
+- KPI "Total" tiles reconcile with the charts (no `timeline`/`periodComparison`
+  on totals - see the skill's `kpis.md`).
+- Tile rows fill all 24 columns; donuts have <= ~7 slices; titles/legends
+  don't overlap.
 
 A spec is not "done" until visual verification passes. The CREATE endpoint
 will not catch broken cross-element column references, missing titles, or

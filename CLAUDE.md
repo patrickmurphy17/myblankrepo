@@ -9,8 +9,22 @@ build-related message (explicit trigger: `start build mode`). Questions cover
 `.env` state, data source, and what/where to build. On `.env`-yes, `bash
 scripts/api/_env.sh` warms the token cache and `scripts/api/whoami.sh`
 actively validates auth against the live API before recon starts. Then Recon
-→ Plan → User approval → POST → GET → Visual verify. **Plan approval is the
-only authorization for state-changing API calls.**
+→ Plan → User approval → validate → POST/PUT → GET → verify → **render & LOOK**
+(`scripts/api/render-workbook.sh <wb-id> [out-dir]`, then `Read` the PNGs) →
+report. **Plan approval is the only authorization for state-changing API
+calls.**
+
+> **API format (2026-09).** Workbooks are created with `POST /v2/workbooks`
+> `{name, folderId, contents:{schemaVersion:1, kind:"workbook", pages, elements, layout, settings}}`
+> and updated with `PUT /v2/workbooks/{id}/contents` `{contents, documentVersion?}`.
+> Pages are metadata only; `contents.elements[]` is one FLAT array (ids unique
+> workbook-wide); layout XML uses `<Page>`/`<Container>`/`<Element>` (never
+> `<GridContainer>`/`<LayoutElement>`); theme lives in `contents.settings.theme`.
+> The legacy `/v2/workbooks/spec` path and the old nested-pages shape are
+> superseded. Only `examples/data-model-sourced-webstaurant-command-center.json`
+> is in the current format; other exemplars are legacy-shape pattern references
+> (run `scripts/convert-legacy-spec.py` first). Details:
+> `.claude/skills/sigma-workbook-conventions/SKILL.md` → "API format (2026-09)."
 
 If the user wants to add project-specific enrichments (Tableau migration
 notes, account-specific patterns, etc.) directly to the skill, the
@@ -29,13 +43,13 @@ Full 3-question text and workflow details live in
 - `sigma-data-models` — Round-trips data model specs (sources, columns, metrics, relationships, filters, controls, folder groupings, column-level security).
 
 **Project-local (`.claude/skills/`):**
-- `sigma-workbook-conventions` — input resolution, naming, layout, control catalog, and POST-time gotchas when generating workbook specs. Carries **load-bearing rules** (passthrough mandatory, `[Metrics/<Name>]` resolution + DM-switch hard rule, formulas trace to recon, controlId/column collision) plus a chunked `reference/` split under `specification/` (per-element files: `schema`, `charts`, `kpis`, `tables`, `controls`, `layout`, `formulas`, `formatting`, `sources`, `sources-warehouse`, `text`, `containers`, `others`, `maps`) and `workflows/` (`plan`, `crud`, `validate`, `discover`, `from-image`), plus top-level rules (`conventions`, `naming`, `scope-and-edge-cases`, `history`). Pair with `scripts/sigma-resolve.py` (resolver) and `scripts/validate-spec.py` (pre-POST validator — 13 checks; full catalog in `reference/workflows/validate.md`).
+- `sigma-workbook-conventions` — input resolution, naming, layout, control catalog, and POST-time gotchas when generating workbook specs. Carries **load-bearing rules** (passthrough mandatory, `[Metrics/<Name>]` resolution + DM-switch hard rule, formulas trace to recon, controlId/column collision) plus a chunked `reference/` split under `specification/` (per-element files: `schema`, `charts`, `kpis`, `tables`, `controls`, `layout`, `formulas`, `formatting`, `sources`, `sources-warehouse`, `text`, `containers`, `others`, `maps`) and `workflows/` (`plan`, `crud`, `validate`, `discover`, `from-image`), plus top-level rules (`conventions`, `naming`, `scope-and-edge-cases`, `history`). Pair with `scripts/sigma-resolve.py` (resolver), `scripts/validate-spec.py` (pre-POST validator — 19 checks; accepts `contents`-wrapped, `document`-wrapped and old flat files; full catalog in `reference/workflows/validate.md`), `scripts/spec_shape.py` (shared normalizer), `scripts/convert-legacy-spec.py <in> [-o out] [--put]` (old shape → current), `scripts/api/publish-workbook.sh post|put|get-spec|get-meta|render`, `scripts/api/verify-workbook.sh <id>` (compile check) and `scripts/api/render-workbook.sh <id> [out-dir]` (PNG per page; needs `ruby` + the vendor mirror).
 
 **Required reading before authoring (HARD GATE).** Before drafting a plan or writing any spec JSON in build mode, `Read` the chunk files mapped to the task type in `.claude/skills/sigma-workbook-conventions/SKILL.md` → "Required reading before authoring." Plans must include a `Chunks Read:` line listing the files consulted. Plans without that line are not approvable. This gate was added 2026-05-19 after a cold-start test session authored two workbooks without ever opening the chunk files — see `.claude/skills/sigma-workbook-conventions/reference/history.md` → "2026-05-19 — Cold-start test session."
 
 Domain-specific workbook-pattern skills (revenue, ops, fin-recon, etc.) get added under `.claude/skills/` as separate folders once we have 2–3 working exemplars to anchor a pattern on. See `docs/skill-authoring.md`.
 
-A read-only mirror of the upstream skills lives at `vendor/sigma-agent-skills/` for inspection while authoring new project skills. Refresh with `scripts/refresh-vendor.sh`.
+A read-only mirror of the upstream skills lives at `vendor/sigma-agent-skills/` for inspection while authoring new project skills. Refresh with `scripts/refresh-vendor.sh`. **In Claude Code web/cloud sessions the upstream plugins are not auto-loaded, so this vendor mirror is the reference** (`vendor/sigma-agent-skills/skills/sigma-workbooks/` is the source of truth for the current workbook API format; upstream v0.3.0 adopted 2026-09-29).
 
 ## Sigma documentation lookups via native MCP
 
@@ -84,7 +98,7 @@ for the workflow.
 
 - `workbooks/<name>/` — one folder per dashboard. Each contains `spec.json`, `prompts/<timestamp>.md`, `iterations/<timestamp>.json`, `notes.md`. Start a new dashboard by copying `workbooks/_template/`.
 - `workbooks/_exemplars/` — golden specs harvested from Sigma. Read-only references; never edit.
-- `scripts/api/` — auth-bootstrapped wrappers around Sigma's MCP server (`mcp-search.sh`, `mcp-describe.sh`) and REST endpoints (`find-file-by-urlid.sh`, `list-folders.sh`, etc.). Each sources `_env.sh` on first call to load `.env` and cache an OAuth token. Workbook CRUD (POST/PUT to `/v2/workbooks/*`) still goes through direct `curl` — no helper script yet.
+- `scripts/api/` — auth-bootstrapped wrappers around Sigma's MCP server (`mcp-search.sh`, `mcp-describe.sh`; these return HTTP 403 for some API clients — fall back to REST) and REST endpoints (`find-file-by-urlid.sh`, `list-folders.sh`, etc.). Each sources `_env.sh` on first call to load `.env` and cache an OAuth token. Workbook CRUD goes through `publish-workbook.sh` (`post`, `put`, `get-spec`, `get-meta`, `render`); visual check via `render-workbook.sh`.
 - `scripts/load-env.sh` — used internally by `_env.sh`. Direct callers rarely need it. `scripts/refresh-vendor.sh` clones the upstream skill repo into `vendor/` for inspection only.
 - `prompts/library/` — reusable prompt fragments (guardrails, framing, etc.).
 - `docs/` — `conventions.md`, `iteration-playbook.md`, `skill-authoring.md`.

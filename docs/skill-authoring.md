@@ -53,8 +53,10 @@ the same scaffolding ("standard pages: overview / trend / detail / exceptions",
    format, dependencies. Use Sigma function syntax for formulas.
 
 5. **Drop a real exemplar** into `examples/exemplar-spec.json`. GET it from
-   the Sigma REST API: `GET /v2/workbooks/{workbookId}/spec` with header
-   `Accept: application/json`, then save the response body. The skill works
+   the Sigma REST API: `GET /v2/workbooks/{workbookId}?includeContents=true`
+   (returns `contents` + `documentVersion`; the legacy
+   `GET /v2/workbooks/{workbookId}/spec` returns the older `document` shape),
+   then save the response body. The skill works
    without one but is much sharper with it.
 
 6. **Test activation.** In a fresh Claude Code session, ask for a workbook of

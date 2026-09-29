@@ -1,12 +1,13 @@
 # Layout
 
-Top-level `layout` XML — when to write it, the two-tag grammar, and
-the silent-failure traps the OpenAPI doesn't surface.
+`contents.layout` XML — when to write it, the two-tag grammar, the
+flat-elements placement rule, and the silent-failure traps the OpenAPI
+doesn't surface. (Format current as of 2026-09.)
 
 **Default to writing explicit `layout` XML for multi-element workbooks.**
 
 For container element bodies (the `kind: "container"` JSON placeholders
-that pair with `<GridContainer>` in this XML), see `containers.md`.
+that pair with `<Container>` in this XML), see `containers.md`.
 
 ## When to write layout vs. let Sigma auto-arrange
 
@@ -19,44 +20,54 @@ Write explicit `layout` when **any** of these apply:
 - The user asked for specific positioning ("logo on left, title on
   right", "KPIs across the top", side-by-side charts).
 - There's a `kind: "container"` element on the page. Containers
-  without a matching `<GridContainer>` are functionally no-ops.
+  without a matching `<Container>` are functionally no-ops.
 - The workbook has more than ~4 elements on a page. Auto-arrange
   becomes a long scroll.
 
-Auto-arrange (omit `layout`) is fine when:
+Do not rely on auto-arrange: the current API **rejects a flat element that
+has no placement in layout**, so `layout` is effectively required whenever
+`contents.elements` is non-empty. Writing one is cheap (the patterns below
+are copy-paste); a visually broken dashboard is expensive.
 
-- The page has a single element.
-- The page is a uniform stack of tables — auto-arrange produces a
-  reasonable list view.
-- The user explicitly says default layout is fine.
+## Elements are flat; layout is the only placement
 
-If unsure, write the layout. Writing one is cheap (the patterns
-below are copy-paste); a visually broken dashboard is expensive.
+`contents.elements[]` is ONE flat array for the whole workbook. Pages
+(`contents.pages[]`) are metadata only, and `pages[].elements` is
+rejected. An element belongs to a page, container, tab, overlay, or panel
+**solely by where its `<Element elementId>` appears in the layout XML**.
+Do not infer ownership from array order. Every element must be placed, and
+every `elementId` must match a declared element (case-sensitive). Element
+ids are unique workbook-wide - prefix them per page.
 
-## Layout is top-level (NOT per-page)
+## Layout is a sibling of `pages` (NOT per-page)
 
-`layout` lives on the **top-level workbook spec**, not nested under
-`pages[i]`. Multi-page workbooks concatenate per-page XML documents:
+`layout` lives in `contents`, next to `pages` and `elements`, not nested
+under `pages[i]`. Multi-page workbooks concatenate per-page XML documents:
 
 ```json
 {
-  "name": "Multi-page Dashboard",
-  "pages": [...],
-  "layout": "<?xml ...?><Page id=\"page-1\" ...>...</Page><?xml ...?><Page id=\"page-2\" ...>...</Page>"
+  "contents": {
+    "pages": [ {"id": "page-1", "name": "Overview"}, {"id": "page-2", "name": "Trend"} ],
+    "elements": [ ... ],
+    "layout": "<?xml ...?><Page id=\"page-1\" ...>...</Page><?xml ...?><Page id=\"page-2\" ...>...</Page>"
+  }
 }
 ```
 
 Each `<Page id="...">` matches a `pages[].id`. Per-page layout
-placed under `pages[i]` is silently discarded — verified
+placed under `pages[i]` is silently discarded - verified
 2026-05-11. See `reference/history.md`.
 
 ## Two flavors: XML layout vs. element-level `layout` object
 
-The top-level `layout` field discussed here is an **XML string** that
+The `contents.layout` field discussed here is an **XML string** that
 positions elements on the page grid.
 
-Individual elements can **also** carry a `layout` **object** (not
-XML) that controls in-element positioning:
+Some legacy exemplars also show an element carrying a `layout` **object**
+(not XML) for in-element positioning. **Unverified in the current format**:
+the 2026-09-29 Webstaurant build dropped it (along with
+`description: {visibility: hidden}` on KPIs) rather than test it. Omit it
+unless you confirm it against a live readback:
 
 ```json
 {
@@ -67,52 +78,61 @@ XML) that controls in-element positioning:
 }
 ```
 
-Observed values: `anchor: "middle"` on KPIs (verified 2026-07-02
-against `sales-mbr-sentinel`). Presumably `"start"` / `"end"`
-supported too — inspect the OpenAPI to enumerate.
+Observed (legacy, 2026-07-02): `anchor: "middle"` on KPIs. Other values
+unverified - inspect the OpenAPI.
 
 These are two different things using the same key name:
 
 | Where | Value type | Purpose |
 |---|---|---|
-| Top of spec (`spec.layout`) | XML string | Places elements on the page grid |
+| `contents.layout` | XML string | Places elements on the page grid |
 | On each element (`element.layout`) | JSON object | Positions content within the element's box |
 
-Both can coexist — the XML places the KPI on the grid; the object
-sets the KPI content's vertical anchor within its allocated cell.
+If used, both coexist - the XML places the KPI on the grid; the object
+sets the content's anchor within its allocated cell.
 
 ## Two-tag grammar
+
+`<Page>` roots, then `<Container>` (has children) and `<Element>` (leaf).
+`<TabbedContainer>` / `<Tab>` and `<Panel>` also exist (see upstream
+`vendor/sigma-agent-skills/skills/sigma-workbooks/reference/specification/layout.md`).
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
 <Page type="grid" gridTemplateColumns="repeat(24, 1fr)" gridTemplateRows="auto" id="<pageId>">
-  <GridContainer elementId="<containerId>" type="grid" gridColumn="1 / 25" gridRow="1 / 4"
-                 gridTemplateColumns="repeat(24, 1fr)" gridTemplateRows="auto">
-    <LayoutElement elementId="<childId>" gridColumn="1 / 13" gridRow="1 / 4"/>
-  </GridContainer>
-  <LayoutElement elementId="<elementId>" gridColumn="1 / 25" gridRow="4 / 16"/>
+  <Container elementId="<containerId>" type="grid" gridColumn="1 / 25" gridRow="1 / 4"
+             gridTemplateColumns="repeat(24, 1fr)" gridTemplateRows="auto">
+    <Element elementId="<childId>" gridColumn="1 / 13" gridRow="1 / 4"/>
+  </Container>
+  <Element elementId="<elementId>" gridColumn="1 / 25" gridRow="4 / 16"/>
 </Page>
 ```
 
-Each `<Page id>` matches a `pages[].id`. Each `elementId` matches an
-element on that page. `gridColumn` / `gridRow` use standard CSS grid
-line syntax (`start / end`); the default grid is **24 columns wide**.
+Each `<Page id>` matches a `pages[].id`. Each `elementId` matches a flat
+`contents.elements[].id`. `gridColumn` / `gridRow` use standard CSS grid
+line syntax (`start / end`); the grid is **24 columns wide**.
 
-## `<GridContainer>` vs `<LayoutElement>` — silent failure
+> **Never emit the legacy `<GridContainer>` / `<LayoutElement>` tags.**
+> Upstream live verification rejects `<Element>`. They appear only in
+> old exemplars; `scripts/convert-legacy-spec.py` rewrites them, and
+> `validate-spec.py` check `legacy-layout-tags` fails on them.
 
-> ⚠️ Use `<GridContainer>` for any tag that has children nested
-> inside it. `<LayoutElement type="grid">` with children parses
-> successfully **as a leaf** and the children are silently dropped —
-> no error, the child elements just disappear from the page.
+## `<Container>` vs `<Element>` - silent failure
 
-- `<LayoutElement elementId="X" .../>` — **leaf**. Positions a single
+> Use `<Container>` for any tag that has children nested inside it.
+> An `<Element>` with children parses successfully **as a leaf** and the
+> children are silently dropped - no error, the child elements just
+> disappear from the page (and, since unplaced elements are rejected,
+> often surface as a placement error).
+
+- `<Element elementId="X" .../>` - **leaf**. Positions a single
   element. No children.
-- `<GridContainer elementId="X" ...>...</GridContainer>` — **container**.
-  Wraps child `<LayoutElement>`s inside its own inner grid.
+- `<Container elementId="X" ...>...</Container>` - **container**.
+  Wraps child `<Element>`s inside its own inner grid.
 
-`scripts/validate-spec.py`'s `layout-element-ids` check catches some
-layout-XML issues pre-POST but does NOT detect `<LayoutElement>`-
-with-children. The manual layout pass in `validate.md` does.
+`scripts/validate-spec.py` checks `elements-placed-in-layout` and
+`containers-have-children` catch the common variants; the manual layout
+pass in `validate.md` and the rendered PNGs catch the rest.
 
 ## `gridTemplateRows`: keep it `"auto"`
 
@@ -130,13 +150,13 @@ not from the container's `gridTemplateRows`. Two patterns work:
 Children share the container's row range, differ by `gridColumn`:
 
 ```xml
-<GridContainer elementId="kpi-row" type="grid"
+<Container elementId="kpi-row" type="grid"
                gridColumn="1 / 25" gridRow="1 / 4"
                gridTemplateColumns="repeat(24, 1fr)" gridTemplateRows="auto">
-  <LayoutElement elementId="kpi-1" gridColumn="1 / 9"   gridRow="1 / 4"/>
-  <LayoutElement elementId="kpi-2" gridColumn="9 / 17"  gridRow="1 / 4"/>
-  <LayoutElement elementId="kpi-3" gridColumn="17 / 25" gridRow="1 / 4"/>
-</GridContainer>
+  <Element elementId="kpi-1" gridColumn="1 / 9"   gridRow="1 / 4"/>
+  <Element elementId="kpi-2" gridColumn="9 / 17"  gridRow="1 / 4"/>
+  <Element elementId="kpi-3" gridColumn="17 / 25" gridRow="1 / 4"/>
+</Container>
 ```
 
 ### Stacked rows inside a container
@@ -146,14 +166,14 @@ container's outer `gridRow` to encompass its children — declare
 generously and let normalization clamp:
 
 ```xml
-<GridContainer elementId="header-row" type="grid"
+<Container elementId="header-row" type="grid"
                gridColumn="1 / 25" gridRow="1 / 12"
                gridTemplateColumns="repeat(24, 1fr)" gridTemplateRows="auto">
-  <LayoutElement elementId="title"  gridColumn="1 / 25" gridRow="1 / 4"/>
-  <LayoutElement elementId="kpi-1"  gridColumn="1 / 9"  gridRow="4 / 12"/>
-  <LayoutElement elementId="kpi-2"  gridColumn="9 / 17" gridRow="4 / 12"/>
-  <LayoutElement elementId="kpi-3"  gridColumn="17 / 25" gridRow="4 / 12"/>
-</GridContainer>
+  <Element elementId="title"  gridColumn="1 / 25" gridRow="1 / 4"/>
+  <Element elementId="kpi-1"  gridColumn="1 / 9"  gridRow="4 / 12"/>
+  <Element elementId="kpi-2"  gridColumn="9 / 17" gridRow="4 / 12"/>
+  <Element elementId="kpi-3"  gridColumn="17 / 25" gridRow="4 / 12"/>
+</Container>
 ```
 
 Use stacked rows when you want a section header above a row of
@@ -162,22 +182,21 @@ out to the page level.
 
 ## After CREATE: IDs are preserved
 
-IDs you `POST` are preserved verbatim — pages, elements, columns keep
+IDs you `POST` are preserved verbatim - pages, elements, columns keep
 the `id` values you sent. You can save the spec, edit it, and `PUT`
-it back directly. Layout `elementId` references stay valid across
-POST/PUT.
+its `contents` back directly. Layout `elementId` references stay valid
+across POST/PUT.
 
-Layout `elementId` references must match an element `id` on that
-page exactly (case-sensitive) — a mismatch silently drops the
-element from the page.
+Layout `elementId` references must match a flat element `id` exactly
+(case-sensitive); the API rejects unplaced elements and undeclared ids.
 
-Verified 2026-07-02 against harvested skill-authored workbooks:
-kebab-case IDs survived POST → GET round-trip unchanged.
+Verified 2026-07-02 (legacy path) and 2026-09-29 (new path): kebab-case
+IDs survived POST -> GET round-trip unchanged.
 
 ## Page-structure pattern (apply by default)
 
 Every page should follow a recognizable visual structure. The
-canonical pattern (used by every templated exemplar):
+default pattern:
 
 ```
 Page 1: <Page Title>
@@ -193,8 +212,11 @@ For multi-section pages, nest containers:
 - Inner container per side-by-side pair (each 12-col span inside the outer).
 - Section-header text element above each section.
 
-See `examples/data-model-sourced-kpi-overview-with-containers.json`
-for a canonical page-structure exemplar.
+See `examples/data-model-sourced-webstaurant-command-center.json` for a
+current-format page-structure exemplar (each page ends with a full-width
+"source data" table so the tables its visuals source from exist on a page).
+KPI rows: if N tiles do not divide 24 evenly, use uneven spans (5 tiles ->
+5,5,5,5,4), otherwise the row fills only 20/24 columns (caught by rendering).
 
 ## Cross-cutting rules
 

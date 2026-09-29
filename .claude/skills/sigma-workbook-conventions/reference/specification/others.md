@@ -26,7 +26,7 @@ A rule for separating sections. Data-less, source-less.
 
 | Field | Required | Notes |
 |---|---|---|
-| `id` | yes | Unique on the page |
+| `id` | yes | Unique workbook-wide |
 | `kind` | yes | Always `"divider"` |
 | `direction` | no | `"horizontal"` (default) or `"vertical"` |
 | `align` | no | e.g., `"middle"` |
@@ -39,7 +39,7 @@ Verified 2026-07-02 against harvested `element-showcase` workbook —
 both horizontal and vertical dividers with full `style` blocks round-trip
 cleanly through POST/GET.
 
-Position via `<LayoutElement>` with a thin `gridRow` (horizontal) or
+Position via `<Element>` with a thin `gridRow` (horizontal) or
 `gridColumn` (vertical) span.
 
 ## Image
@@ -57,7 +57,7 @@ supported via the spec.
 
 | Field | Required | Notes |
 |---|---|---|
-| `id` | yes | Unique on the page |
+| `id` | yes | Unique workbook-wide |
 | `kind` | yes | Always `"image"` |
 | `url` | yes | Public HTTPS URL. Supports `{{formula}}` references |
 
@@ -92,20 +92,20 @@ Images sit in the page grid like any other element. Common idioms:
 **Logo + title side-by-side at the top of a page:**
 
 ```xml
-<GridContainer elementId="header" type="grid"
+<Container elementId="header" type="grid"
                gridColumn="1 / 25" gridRow="1 / 6"
                gridTemplateColumns="repeat(24, 1fr)" gridTemplateRows="auto">
-  <LayoutElement elementId="logo"  gridColumn="1 / 6"  gridRow="1 / 6"/>
-  <LayoutElement elementId="title" gridColumn="6 / 25" gridRow="1 / 6"/>
-</GridContainer>
+  <Element elementId="logo"  gridColumn="1 / 6"  gridRow="1 / 6"/>
+  <Element elementId="title" gridColumn="6 / 25" gridRow="1 / 6"/>
+</Container>
 ```
 
 **Icon accent on a section header** — small image (1 column × 2 rows)
 overlapping with a text element:
 
 ```xml
-<LayoutElement elementId="icon"     gridColumn="1 / 2"   gridRow="1 / 3"/>
-<LayoutElement elementId="section"  gridColumn="2 / 25"  gridRow="1 / 3"/>
+<Element elementId="icon"     gridColumn="1 / 2"   gridRow="1 / 3"/>
+<Element elementId="section"  gridColumn="2 / 25"  gridRow="1 / 3"/>
 ```
 
 ### When to use an image vs. container `backgroundImage`
@@ -130,7 +130,7 @@ Renders an external URL inline — a hosted report, form, video, etc.
 
 | Field | Required | Notes |
 |---|---|---|
-| `id` | yes | Unique on the page |
+| `id` | yes | Unique workbook-wide |
 | `kind` | yes | Always `"embed"` |
 | `url` | yes | Public URL. Supports `{{formula}}` references |
 
@@ -138,7 +138,7 @@ Documented by the upstream eng skill but not observed in harvested
 reference workbooks yet. Inspect the OpenAPI shape before relying on
 additional fields.
 
-Positions via `<LayoutElement>` in layout XML like any other element.
+Positions via `<Element>` in layout XML like any other element.
 
 ## Maps
 

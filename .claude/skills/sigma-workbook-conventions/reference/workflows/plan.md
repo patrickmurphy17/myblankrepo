@@ -30,7 +30,7 @@ session and cite chunk + section in the plan.
 
 | Task type | Required chunks |
 |---|---|
-| Every build (always) | `reference/conventions.md` + this file + `reference/specification/schema.md` + `reference/specification/layout.md` |
+| Every build (always) | `reference/conventions.md` + this file + `reference/specification/schema.md` + `reference/specification/layout.md` (+ `reference/workflows/validate.md` for the render step) |
 | Viz-heavy build (>2 chart kinds, KPI rows, pivots) | + each `reference/specification/<kind>.md` for the kinds in the plan |
 | Formula-heavy build (custom calcs, metrics, Lookup, Rollup) | + `reference/specification/formulas.md` |
 | Conditional-formatting build (table/pivot cell coloring) | + `reference/specification/tables.md` |
@@ -233,32 +233,44 @@ That contract puts the burden on the agent:
 
 ## After plan approval — proceed to build
 
+0. **Format reminder.** Author in the current format (SKILL.md -> "API
+   format (2026-09)"): `{name, folderId, contents:{schemaVersion:1,
+   kind:"workbook", pages (metadata only), elements (FLAT), layout
+   (`<Page>`/`<Container>`/`<Element>`), settings.theme}}`. Element ids
+   unique workbook-wide (prefix per page). Do NOT clone legacy-shape
+   exemplars verbatim; start from
+   `examples/data-model-sourced-webstaurant-command-center.json` or run
+   `scripts/convert-legacy-spec.py`.
 1. **Write the spec** to `workbooks/<name>/spec.json` (or `.yaml` if
-   YAML — the API accepts both; this skill's exemplars use JSON).
+   YAML - the API accepts both; this skill's exemplars use JSON).
    Follow the rules in `reference/conventions.md` and the per-element
    shape docs in `reference/specification/`.
-2. **Validate** via `scripts/validate-spec.py workbooks/<name>/spec.json`.
-   Fix everything reported.
-3. **POST** via `scripts/api/publish-workbook.sh post workbooks/<name>/spec.json`.
-   The wrapper runs validation first, then POSTs.
-4. **GET-back** via `scripts/api/publish-workbook.sh get-spec <wb-id>`.
-   Save to `workbooks/<name>/spec.json` (overwriting the authored
-   version) so subsequent PUTs start from the server's source of
-   truth — captures any server-added fields (response-only metadata,
-   normalized layout XML, etc.). IDs are preserved verbatim, but the
-   GET-back also picks up any UI-side edits made after the POST.
-5. **Verify** via `scripts/api/verify-workbook.sh <wb-id>`. Checks
+2. **Validate** via `scripts/validate-spec.py workbooks/<name>/spec.json`
+   (19 checks). Fix everything reported.
+3. **Publish** via `scripts/api/publish-workbook.sh post workbooks/<name>/spec.json`
+   (`POST /v2/workbooks`; the wrapper validates first). For an existing
+   workbook re-pull and check `documentVersion`, then
+   `publish-workbook.sh put <wb-id> <spec>` (`PUT .../contents`).
+4. **GET-back** via `scripts/api/publish-workbook.sh get-spec <wb-id>`
+   (`GET ?includeContents=true`). Save to `workbooks/<name>/spec.json`
+   (overwriting the authored version) so subsequent PUTs start from the
+   server's source of truth. IDs are preserved verbatim, but the GET-back
+   also picks up any UI-side edits made after the POST.
+5. **Verify (compile)** via `scripts/api/verify-workbook.sh <wb-id>`. Checks
    that every element's compiled SQL doesn't contain
-   `"Unknown column"` or `"Circular reference"` markers — POST
+   `"Unknown column"` or `"Circular reference"` markers - POST
    accepts specs whose formulas don't resolve at render time, and
    only the verify pass catches that.
-6. **Visual verify in the UI.** Open the workbook URL. The API
-   doesn't validate cross-element column resolution or
-   visualization quality.
+6. **Render & LOOK.** `scripts/api/render-workbook.sh <wb-id> [out-dir]`
+   writes one PNG per page; `Read` each PNG. This is required - compile
+   success does not prove a correct workbook. It is what caught the
+   KPI latest-month trap, a 5-tile KPI row filling only 20/24 columns, a
+   20-slice donut, and a map title/legend overlap. Reconcile KPI headlines
+   against the charts. Fix and re-PUT until the render is right.
 7. **Report back** with both the workbook URL AND the saved spec
-   path.
+   path, and state what the render check showed.
 
 If the user wants iterative refinement after the initial build, GET
-the spec again first (IDs may have changed if other users edited),
-then edit + PUT. Full PUT semantics in
+the spec again first (a human may have edited or renamed it; check
+`documentVersion`), then edit + PUT. Full PUT semantics in
 `reference/workflows/crud.md`.

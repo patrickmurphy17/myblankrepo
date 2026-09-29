@@ -1,3 +1,5 @@
+> **LEGACY-SHAPE exemplar (pre-2026-09 API).** The paired JSON uses nested `pages[].elements`, `<GridContainer>`/`<LayoutElement>` and `themeOverrides`, which the current API rejects. Use it as a *pattern* reference only: run `python3 scripts/convert-legacy-spec.py <json> -o <out>` and re-validate/render before publishing. Current-format exemplar: `data-model-sourced-webstaurant-command-center.json`.
+
 # `data-model-sourced-single-page-inventory-health.json` — design intent
 
 Canonical **single-page dashboard with conditional formatting + shared

@@ -17,9 +17,9 @@ jq --arg k region-map 'first(.. | objects | select((.allOf? and any(.allOf[]?; .
 
 | Kind | Geography field | Notes |
 |---|---|---|
-| `geography-map` | `geography: { id }` | Single GeoJSON-geometry column |
-| `point-map` | `latitude: { id }` + `longitude: { id }` | Optional `size: { id }` → bubble map |
-| `region-map` | `region: { id, regionType }` | See `regionType` enum below |
+| `geography-map` | `geography: { columnId }` | Single GeoJSON-geometry column |
+| `point-map` | `latitude: { columnId }` + `longitude: { columnId }` | Optional `size: { columnId }` → bubble map |
+| `region-map` | `region: { columnId, regionType }` | See `regionType` enum below |
 
 ### `regionType` enum
 
@@ -36,13 +36,14 @@ For `region-map`, the column's values must match the region system:
 ## Shape gotcha
 
 The binding fields — `geography`, `latitude`, `longitude`, `size`,
-`region` — are **single `{ id }` objects**. But `label` and `tooltip`
-are **arrays** of `{ id }`. Getting this wrong is a common trip.
+`region` — are **single `{ columnId }` objects**. But `label` and `tooltip`
+are **arrays** of `{ columnId }`. `{ id }` on any of these channels is a
+400 (use `columnId`). Getting this wrong is a common trip.
 
 ```json
-"region": { "id": "col-state", "regionType": "us-state" },    // single object
-"label":  [ { "id": "col-revenue" } ],                          // array
-"tooltip":[ { "id": "col-revenue" }, { "id": "col-margin" } ]   // array
+"region": { "columnId": "col-state", "regionType": "us-state" },    // single object
+"label":  [ { "columnId": "col-revenue" } ],                          // array
+"tooltip":[ { "columnId": "col-revenue" }, { "columnId": "col-margin" } ]   // array
 ```
 
 ## Verified examples
@@ -62,9 +63,9 @@ are **arrays** of `{ id }`. Getting this wrong is a common trip.
     { "id": "col-margin",  "formula": "[Metrics/Total Profit Margin]" },
     { "id": "col-revenue", "formula": "[Metrics/Total Revenue]" }
   ],
-  "region": { "id": "col-state", "regionType": "us-state" },
+  "region": { "columnId": "col-state", "regionType": "us-state" },
   "color":  { "by": "scale", "column": "col-margin" },
-  "label":  [ { "id": "col-revenue" } ]
+  "label":  [ { "columnId": "col-revenue" } ]
 }
 ```
 
@@ -84,9 +85,9 @@ are **arrays** of `{ id }`. Getting this wrong is a common trip.
     { "id": "col-profit",  "formula": "[Metrics/Total Profit]" },
     { "id": "col-margin",  "formula": "[Metrics/Total Profit Margin]" }
   ],
-  "latitude":  { "id": "col-lat" },
-  "longitude": { "id": "col-lon" },
-  "size":      { "id": "col-profit" },
+  "latitude":  { "columnId": "col-lat" },
+  "longitude": { "columnId": "col-lon" },
+  "size":      { "columnId": "col-profit" },
   "color":     { "by": "scale", "column": "col-margin" }
 }
 ```
@@ -98,12 +99,17 @@ above is the current source of truth. Expect the same envelope
 (`source`, `columns`, `color`, `label`, `tooltip`) plus:
 
 ```json
-"geography": { "id": "col-geojson" }
+"geography": { "columnId": "col-geojson" }
 ```
 
 ## Common pitfalls
 
-- **Wrong shape on binding fields.** Writing `region: [{id, regionType}]`
+- **`{id}` pointers.** Map channel pointers use `{columnId}`; `{id}` is a
+  400. (Older examples in this repo used `{id}`.)
+- **Title / legend overlap.** A 2026-09-29 render showed the map title
+  overlapping the legend; check the rendered PNG and shorten the title or
+  hide/move the legend.
+- **Wrong shape on binding fields.** Writing `region: [{columnId, regionType}]`
   as an array will fail — it's a single object.
 - **regionType mismatch.** If your column contains ZIP codes but you set
   `regionType: "us-state"`, the map will render empty (no error).
@@ -117,4 +123,4 @@ above is the current source of truth. Expect the same envelope
   [`../specification/tables.md`](tables.md) and
   [`../specification/sources.md`](sources.md).
 - `color` channel shape (used identically here) — [`charts.md`](charts.md).
-- Layout placement (`<LayoutElement>`) — [`layout.md`](layout.md).
+- Layout placement (`<Element>`) — [`layout.md`](layout.md).
