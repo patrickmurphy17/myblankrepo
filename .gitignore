@@ -1,6 +1,7 @@
 # Secrets
 .env
-.env.*.local
+.env.*
+!.env.*.example
 
 # Personal Claude Code settings (per-user)
 .claude/settings.local.json
