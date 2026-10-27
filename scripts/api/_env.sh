@@ -18,22 +18,13 @@
 # Don't impose `set -euo pipefail` here — inherit the caller's shell options.
 
 _sigma_repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+_sigma_token_cache="/tmp/.sigma_token"
 _sigma_token_ttl=$((55 * 60))   # refresh 5 min before the 60-min OAuth expiry
 
-# 1. Load credentials. $SIGMA_ENV=<name> selects a named environment profile
-#    (.env.<name>, e.g. SIGMA_ENV=sigma-on-sigma -> .env.sigma-on-sigma) and
-#    overrides any already-exported SIGMA_* vars. Otherwise load .env only if
-#    the relevant vars aren't already exported.
-if [ -n "${SIGMA_ENV:-}" ]; then
-  unset SIGMA_API_TOKEN
-  eval "$(ENV_FILE="${_sigma_repo_root}/.env.${SIGMA_ENV}" "${_sigma_repo_root}/scripts/load-env.sh")"
-elif [ -z "${SIGMA_BASE_URL:-}" ] || [ -z "${SIGMA_CLIENT_ID:-}" ] || [ -z "${SIGMA_CLIENT_SECRET:-}" ]; then
+# 1. Load .env if the relevant vars aren't already exported.
+if [ -z "${SIGMA_BASE_URL:-}" ] || [ -z "${SIGMA_CLIENT_ID:-}" ] || [ -z "${SIGMA_CLIENT_SECRET:-}" ]; then
   eval "$("${_sigma_repo_root}/scripts/load-env.sh")"
 fi
-
-# Token cache is keyed by API host so switching environments never reuses a
-# token minted for a different one.
-_sigma_token_cache="/tmp/.sigma_token.$(printf '%s' "$SIGMA_BASE_URL" | cksum | cut -d' ' -f1)"
 
 # 2. Resolve SIGMA_API_TOKEN via cache → fresh fetch.
 if [ -z "${SIGMA_API_TOKEN:-}" ]; then
@@ -102,7 +93,7 @@ sigma_curl() {
     _body="${_resp%HTTP_STATUS:*}"
     _body="${_body%$'\n'}"
     if [ "$_status" = "401" ] && [ "$_retries" -eq 0 ]; then
-      rm -f "/tmp/.sigma_token.$(printf '%s' "$SIGMA_BASE_URL" | cksum | cut -d' ' -f1)"
+      rm -f /tmp/.sigma_token
       unset SIGMA_API_TOKEN
       source "${BASH_SOURCE[0]}"
       _retries=1

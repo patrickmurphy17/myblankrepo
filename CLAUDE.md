@@ -76,13 +76,9 @@ for the workflow.
    repo-local `scripts/api/get-token.sh`, cache at `/tmp/.sigma_token` with
    a 55-min TTL). No env-prelude or token chaining needed from the caller.
    The skill owns auth end-to-end so the same code path runs in CLI and web.
-3. **Multiple environments.** Copy `.env.<name>.example` to `.env.<name>` and
-   set `SIGMA_ENV=<name>` to target it (overrides any injected `SIGMA_*` vars;
-   token cache is per API host). Currently defined: `sigma-on-sigma`
-   (`https://api.staging.us.aws.sigmacomputing.io`, MCP at `/mcp/v2`).
-4. To use the upstream `sigma-api` plugin's `get-token.sh` (or any custom
+3. To use the upstream `sigma-api` plugin's `get-token.sh` (or any custom
    fetcher) instead, set `SIGMA_TOKEN_FETCHER` to its absolute path.
-5. **Never echo `$SIGMA_API_TOKEN`, `$SIGMA_CLIENT_SECRET`, or any other secret.** Don't write secrets to files inside the workspace. Pass tokens only via `Authorization` headers.
+4. **Never echo `$SIGMA_API_TOKEN`, `$SIGMA_CLIENT_SECRET`, or any other secret.** Don't write secrets to files inside the workspace. Pass tokens only via `Authorization` headers.
 
 ## Layout
 
